@@ -1966,6 +1966,15 @@ public class K {
             return new KSymbol((String) Array.get(array,i));
         }
 
+        public String toString(boolean showType) {
+            String[] objArray = (String[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append("`").append(objArray[i]);
+            }
+            return sb.toString();
+        }
+        
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             w.write(super.toString(showType));
             if (getLength() == 0)
@@ -2011,6 +2020,15 @@ public class K {
             write(o,(byte) 0);
             write(o,b.length);
             o.write(b);
+        }
+        
+        public String toString(boolean showType) {
+            char[] objArray = (char[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append("`").append(objArray[i]);
+            }
+            return sb.toString();
         }
 
         public void toString(LimitedWriter w,boolean showType) throws IOException {
