@@ -6,33 +6,113 @@
 
 package studio.ui;
 
-import studio.kdb.*;
-import studio.utils.OSXAdapter;
-import javax.swing.event.UndoableEditEvent;
-import javax.swing.undo.CannotRedoException;
-import javax.swing.undo.CannotUndoException;
-import kx.c;
-import org.netbeans.editor.*;
-import org.netbeans.editor.Utilities;
-import org.netbeans.editor.ext.ExtKit;
-import org.netbeans.editor.ext.ExtSettingsInitializer;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Event;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.Collections;
+import java.util.EventListener;
+import java.util.EventObject;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Locale;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.ResourceBundle;
+import java.util.Vector;
 
-import javax.swing.*;
+import javax.swing.Action;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JEditorPane;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
+import javax.swing.JTextPane;
+import javax.swing.JToolBar;
+import javax.swing.KeyStroke;
+import javax.swing.ProgressMonitor;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.UndoableEditEvent;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileView;
-import javax.swing.table.TableModel;
-import javax.swing.text.*;
-import javax.swing.undo.UndoManager;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import java.util.*;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
+import javax.swing.table.TableModel;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
+
+import kx.c;
+
+import org.netbeans.editor.ActionFactory;
+import org.netbeans.editor.BaseDocument;
+import org.netbeans.editor.BaseKit;
+import org.netbeans.editor.BaseSettingsInitializer;
+import org.netbeans.editor.BaseTextUI;
+import org.netbeans.editor.LocaleSupport;
+import org.netbeans.editor.Settings;
+import org.netbeans.editor.Utilities;
 import org.netbeans.editor.example.QKit;
+import org.netbeans.editor.ext.ExtKit;
+import org.netbeans.editor.ext.ExtSettingsInitializer;
 import org.netbeans.editor.ext.q.QSettingsInitializer;
+
+import studio.kdb.Config;
+import studio.kdb.ConnectionPool;
+import studio.kdb.DictionaryModel;
+import studio.kdb.FlipTableModel;
+import studio.kdb.K;
+import studio.kdb.KTableModel;
+import studio.kdb.LimitedWriter;
+import studio.kdb.Lm;
+import studio.kdb.QErrors;
+import studio.kdb.ReloadQKeywords;
+import studio.kdb.Server;
 import studio.utils.BrowserLaunch;
+import studio.utils.OSXAdapter;
 import studio.utils.SwingWorker;
 
 public class Studio extends JPanel implements Observer,WindowListener {
@@ -1995,7 +2075,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
         if (r != null) {
             exportAction.setEnabled(true);
 
-            if (FlipTableModel.isTable(r)) {
+            if (FlipTableModel.isTable(r) || DictionaryModel.isDictionary(r)) {
                 QGrid grid = new QGrid(r);
                 table = grid.getTable();
 

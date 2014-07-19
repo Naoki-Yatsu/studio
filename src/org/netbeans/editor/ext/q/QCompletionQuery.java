@@ -5,115 +5,168 @@
 */
 package org.netbeans.editor.ext.q;
 
-import studio.kdb.K;
-import studio.kdb.Server;
-import studio.kdb.ConnectionPool;
-import studio.ui.Util;
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
+
+import javax.swing.ImageIcon;
+import javax.swing.JEditorPane;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Caret;
+import javax.swing.text.Document;
+import javax.swing.text.JTextComponent;
+
 import org.netbeans.editor.BaseDocument;
 import org.netbeans.editor.SyntaxSupport;
 import org.netbeans.editor.ext.CompletionQuery;
 
-import javax.swing.*;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Caret;
-import javax.swing.text.JTextComponent;
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringTokenizer;
 import studio.kdb.Config;
+import studio.kdb.ConnectionPool;
+import studio.kdb.K;
+import studio.kdb.Server;
+import studio.ui.Util;
 
 public class QCompletionQuery implements CompletionQuery
 {
     private static ImageIcon currentIcon;
     private static boolean lowerCase;
 
-    public CompletionQuery.Result query(JTextComponent component, int offset, SyntaxSupport support)
-     {
-         CompletionQuery.Result r = null;
-         currentIcon= null;
+    public CompletionQuery.Result query(JTextComponent component, int offset, SyntaxSupport support) {
+        CompletionQuery.Result r = null;
+        currentIcon = null;
 
-         try
-         {
-             if (component instanceof JEditorPane)
-             {
-                 Server s = (Server) ((JEditorPane) component).getDocument().getProperty("server");
+        try {
+            if (component instanceof JEditorPane) {
+                Server s = (Server) ((JEditorPane) component).getDocument().getProperty("server");
 
-                 if (s != null)
-                 {
-                     List result = new ArrayList();
+                if (s != null) {
+                    Document doc = ((JEditorPane) component).getDocument();
+                    String text = doc.getText(0, offset);
+                    String latterText = doc.getText(offset, doc.getLength() - offset);
 
-                     String text = ((JEditorPane) component).getDocument().getText(0, offset);
+                    // get text of this line
+                    String[] lines = text.split("\n");
+                    String foreThisLine = "";
+                    if (!text.endsWith("\n") && lines.length > 0) {
+                        foreThisLine = lines[lines.length - 1];
+                    }
+                    String[] latterlines = latterText.split("\n");
+                    String latterThisLine = "";
+                    if (latterlines.length > 0) {
+                        latterThisLine = latterlines[0];
+                    }
 
-                     StringTokenizer t= new StringTokenizer(text, " %$!&()=~#;:><?,+-'\"/*");
+                    StringTokenizer t = new StringTokenizer(text, " %$!&()=~#;:><?,+-'\"/*\n");
+                    if (text.endsWith("\n")) {
+                        text = "";
+                    } else {
+                        while (t.hasMoreTokens()) {
+                            text = t.nextToken();
+                        }
+                    }
 
-                     while( t.hasMoreTokens())
-                     {
-                         text= t.nextToken();
-                     }
+                    // tablename, using to search column
+                    String tablename = "";
 
-                     kx.c c= null;
+                    // edit fore of curser
+                    // If end without " " or ",", set last word as prefix
+                    String prefix = "";
+                    if (!foreThisLine.endsWith(" ") && !foreThisLine.endsWith(",")) {
+                        StringTokenizer token = new StringTokenizer(foreThisLine, " %$!&()=~#;:><?,+-'\"/*\n");
+                        while (token.hasMoreTokens()) {
+                            prefix = token.nextToken();
+                        }
+                    }
 
-                     try
-                     {
-                         c=ConnectionPool.getInstance().leaseConnection(s);
-                         ConnectionPool.getInstance().checkConnected(c);
+                    // if there is "where" in front of cursor, use the word before where as tablename.
+                    if (foreThisLine.contains(" where ")) {
+                        String[] strArray = foreThisLine.split(" +");
+                        for (int i = 0; i < strArray.length; i++) {
+                            if (strArray[i].equals("where") && i > 0) {
+                                tablename = strArray[i - 1];
+                                break;
+                            }
+                        }
+                    }
 
-                         if(text.endsWith("."))
-                         {
-                             c.k(new K.KCharacterVector("cols "+text.substring(0,text.length()-1)));
-                             Object res = c.getResponse();
-                             if( res instanceof K.KSymbolVector)
-                             {
-                                  K.KSymbolVector tables= (K.KSymbolVector)res;
+                    // edit latter of cursor
+                    // If there is "from" after cursor, use the word after "from" as tablaname.
+                    if (latterThisLine.contains("from ")) {
+                        String[] strArray = latterThisLine.split(" +");
+                        for (int i = 0; i < strArray.length; i++) {
+                            if (strArray[i].equals("from") && i + 1 < strArray.length) {
+                                tablename = strArray[i + 1];
+                                break;
+                            }
+                        }
+                    }
 
-                                 for (int i = 0; i < tables.getLength(); i++)
-                                 {
-                                     result.add(new BooleanAttribItem(((K.KSymbol)tables.at(i)).s, offset, 0, false));
-                                 }
+                    kx.c c = null;
 
-                                 currentIcon= Util.getImage(Config.imageBase2+"column.png");
+                    try {
+                        c = ConnectionPool.getInstance().leaseConnection(s);
+                        ConnectionPool.getInstance().checkConnected(c);
 
-                                 r = new CompletionQuery.DefaultResult(component, "Columns", result, offset, 0);
-                             }
-                         }
-                         else
-                         {
-                             c.k(new K.KCharacterVector("tables[]"));
-                             Object res = c.getResponse();
-                             if( res instanceof K.KSymbolVector)
-                             {
-                                  K.KSymbolVector tables= (K.KSymbolVector)res;
+                        String queryName = "";
 
-                                 for(int i = 0; i < tables.getLength(); i++)
-                                 {
-                                     result.add(new BooleanAttribItem(((K.KSymbol)tables.at(i)).s, offset, 0, false));
-                                 }
+                        if (text.endsWith(".")) {
+                            queryName = "Columns";
+                            tablename = text.substring(0, text.length() - 1);
+                            currentIcon = Util.getImage(Config.imageBase2 + "column.png");
+                            c.k(new K.KCharacterVector("cols " + tablename));
 
-                                 currentIcon= Util.getImage(Config.imageBase2+"table.png");
+                        } else if (tablename != null && !tablename.equals("") && !tablename.equals(" ")) {
+                            queryName = "Columns";
+                            currentIcon = Util.getImage(Config.imageBase2 + "column.png");
+                            c.k(new K.KCharacterVector("cols " + tablename));
 
-                                 r = new CompletionQuery.DefaultResult(component, "Tables", result, offset, 0);
-                             }
-                         }
-                     }
-                     catch (Throwable th)
-                     {
-                     }
-                     finally
-                     {
-                         if(c != null)
-                             ConnectionPool.getInstance().freeConnection(s,c);
-                     }
-                 }
-             }
-         }
-         catch (Throwable th)
-         {
+                        } else {
+                            queryName = "Tables";
+                            currentIcon = Util.getImage(Config.imageBase2 + "table.png");
+                            c.k(new K.KCharacterVector("tables[]"));
+                        }
 
-         }
+                        Object res = c.getResponse();
+                        if (res instanceof K.KSymbolVector) {
+                            K.KSymbolVector items = (K.KSymbolVector) res;
 
-         return r;
-     }
+                            List allItems = new ArrayList();
+                            List searchItems = new ArrayList();
+
+                            for (int i = 0; i < items.getLength(); i++) {
+                                K.KSymbol symbol = (K.KSymbol) items.at(i);
+                                allItems.add(new BooleanAttribItem(symbol.s, offset, 0, false));
+
+                                if (prefix != "" && symbol.s.startsWith(prefix)) {
+                                    searchItems.add(new BooleanAttribItem(symbol.s.substring(prefix.length()), offset, 0, false));
+                                }
+                            }
+
+                            List result = new ArrayList();
+
+                            // if items which start with prefix is not zero, use only search items.
+                            if (searchItems.isEmpty()) {
+                                result = allItems;
+                            } else {
+                                result = searchItems;
+                            }
+
+                            r = new CompletionQuery.DefaultResult(component, queryName, result, offset, 0);
+                        }
+
+                    } catch (Throwable th) {
+                    } finally {
+                        if (c != null)
+                            ConnectionPool.getInstance().freeConnection(s, c);
+                    }
+                }
+            }
+        } catch (Throwable th) {
+        }
+
+        return r;
+    }
 
 
     private static abstract class QResultItem implements CompletionQuery.ResultItem

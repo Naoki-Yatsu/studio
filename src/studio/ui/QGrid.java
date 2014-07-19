@@ -6,13 +6,6 @@
 
 package studio.ui;
 
-import studio.kdb.DictTableModel;
-import studio.kdb.K;
-import studio.kdb.FlipTableModel;
-import studio.kdb.K.Dict;
-import studio.kdb.K.Flip;
-import studio.kdb.TableHeaderRenderer;
-import studio.kdb.TableRowHeader;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -25,6 +18,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -45,7 +39,16 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
+
 import studio.kdb.Config;
+import studio.kdb.DictTableModel;
+import studio.kdb.DictionaryModel;
+import studio.kdb.FlipTableModel;
+import studio.kdb.K;
+import studio.kdb.K.Dict;
+import studio.kdb.K.Flip;
+import studio.kdb.TableHeaderRenderer;
+import studio.kdb.TableRowHeader;
 
 public class QGrid extends JPanel {
     private UserAction copyExcelFormatAction;
@@ -160,11 +163,16 @@ public class QGrid extends JPanel {
 
     public QGrid(K.KBase obj) {
         super();
-
-        if (obj instanceof K.Flip)
-            model = new FlipTableModel((K.Flip) obj);
-        else
-            model = new DictTableModel((K.Dict) obj);
+        
+        if (FlipTableModel.isTable(obj)) {
+            if (obj instanceof K.Flip) {
+                model = new FlipTableModel((K.Flip) obj);
+            } else {
+                model = new DictTableModel((K.Dict) obj);
+            }
+        } else {
+            model = new DictionaryModel((K.Dict) obj);
+        }
 
         table = new MYJTable(model);
 
