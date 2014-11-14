@@ -6,6 +6,8 @@
 
 package studio.ui;
 
+import static javax.swing.JSplitPane.VERTICAL_SPLIT;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -23,6 +25,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -47,7 +51,6 @@ import java.util.Vector;
 import javax.swing.Action;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -148,7 +151,6 @@ public class Studio extends JPanel implements Observer,WindowListener {
     private UserAction saveFileAction;
     private UserAction saveAsFileAction;
     private UserAction exportAction;
-    private UserAction builtToolTipAction;
     private UserAction chartAction;
     private ActionFactory.UndoAction undoAction;
     private ActionFactory.RedoAction redoAction;
@@ -165,6 +167,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
     private UserAction aboutAction;
     private UserAction exitAction;
     private UserAction toggleDividerOrientationAction;
+    private UserAction minMaxDividerAction;
     private UserAction editServerAction;
     private UserAction addServerAction;
     private UserAction removeServerAction;
@@ -211,7 +214,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
         }
     }
     public static WindowListMonitor windowListMonitor = new WindowListMonitor();
-
+/*
     private void updateKeyBindings(JEditorPane editorPane) {
         InputMap inputMap = editorPane.getInputMap();
         inputMap.put(KeyStroke.getKeyStroke("DELETE"),ExtKit.deleteNextCharAction);
@@ -224,7 +227,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
         inputMap.put(KeyStroke.getKeyStroke("ctrl Z"),ExtKit.undoAction);
         inputMap.put(KeyStroke.getKeyStroke("ctrl Y"),ExtKit.redoAction);
     }
-
+*/
     private void updateUndoRedoState(UndoManager um) {
         undoAction.setEnabled(um.canUndo());
         redoAction.setEnabled(um.canRedo());
@@ -451,7 +454,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
                 if (filename != null) {
                     String lineSeparator = (String) java.security.AccessController.doPrivileged(new sun.security.action.GetPropertyAction("line.separator"));
 
-                    BufferedWriter fw = null;
+                    BufferedWriter fw;
 
                     try {
                         fw = new BufferedWriter(new FileWriter(filename));
@@ -1102,6 +1105,15 @@ public class Studio extends JPanel implements Observer,WindowListener {
             }
         };
 
+        minMaxDividerAction = new UserAction(I18n.getString("MaximizeEditorPane"),
+                                             getImage(Config.imageBase2 + "blank.png"),
+                                             "Maximize editor pane",
+                                             new Integer(KeyEvent.VK_M),
+                                             KeyStroke.getKeyStroke(KeyEvent.VK_M,menuShortcutKeyMask)) {
+            public void actionPerformed(ActionEvent e) {
+              minMaxDivider();
+            }
+        };
 
         toggleDividerOrientationAction = new UserAction(I18n.getString("ToggleDividerOrientation"),
                                                         getImage(Config.imageBase2 + "blank.png"),
@@ -1588,6 +1600,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
         menu = new JMenu(I18n.getString("Window"));
         menu.setMnemonic(KeyEvent.VK_W);
 
+        menu.add(new JMenuItem(minMaxDividerAction));
         menu.add(new JMenuItem(toggleDividerOrientationAction));
         menu.add(new JMenuItem(openFileInNewWindowAction));
         menu.add(new JMenuItem(arrangeAllAction));
@@ -1790,7 +1803,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
         return toolbar;
     }
 
-    private static class Impl extends FileView implements 
+    private static class Impl extends FileView implements
         LocaleSupport.Localizer {
         // FileView implementation
         
@@ -1833,6 +1846,37 @@ public class Studio extends JPanel implements Observer,WindowListener {
         }
     }
     private WindowListChangedEventListener windowListChangedEventListener;
+
+    private int dividerLastPosition; // updated from property change listener
+    private void minMaxDivider(){
+      //BasicSplitPaneDivider divider = ((BasicSplitPaneUI)splitpane.getUI()).getDivider();
+      //((JButton)divider.getComponent(0)).doClick();
+      //((JButton)divider.getComponent(1)).doClick();
+      if(splitpane.getDividerLocation()>=splitpane.getMaximumDividerLocation()){
+        // Minimize editor pane
+        splitpane.getTopComponent().setMinimumSize(new Dimension());
+        splitpane.getBottomComponent().setMinimumSize(null);
+        splitpane.setDividerLocation(0.);
+        splitpane.setResizeWeight(0.);
+      }
+      else if(splitpane.getDividerLocation()<=splitpane.getMinimumDividerLocation()){
+        // Restore editor pane
+        splitpane.getTopComponent().setMinimumSize(null);
+        splitpane.getBottomComponent().setMinimumSize(null);
+        splitpane.setResizeWeight(0.);
+        // Could probably catch resize edge-cases etc in pce too
+        if(dividerLastPosition>=splitpane.getMaximumDividerLocation()||dividerLastPosition<=splitpane.getMinimumDividerLocation())
+          dividerLastPosition=splitpane.getMaximumDividerLocation()/2;
+        splitpane.setDividerLocation(dividerLastPosition);
+      }
+      else{
+        // Maximize editor pane
+        splitpane.getBottomComponent().setMinimumSize(new Dimension());
+        splitpane.getTopComponent().setMinimumSize(null);
+        splitpane.setDividerLocation(splitpane.getOrientation()==VERTICAL_SPLIT?splitpane.getHeight()-splitpane.getDividerSize():splitpane.getWidth()-splitpane.getDividerSize());
+        splitpane.setResizeWeight(1.);
+      }
+    }
 
     private void toggleDividerOrientation() {
         if (splitpane.getOrientation() == JSplitPane.VERTICAL_SPLIT)
@@ -1917,6 +1961,17 @@ public class Studio extends JPanel implements Observer,WindowListener {
         splitpane.setDividerLocation(0.5);
 
         textArea.requestFocus();
+        splitpane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY,new PropertyChangeListener(){
+          @Override
+        public void propertyChange(PropertyChangeEvent pce){
+            String s=splitpane.getDividerLocation()>=splitpane.getMaximumDividerLocation()?I18n.getString("MinimizeEditorPane"):splitpane.getDividerLocation()<=splitpane.getMinimumDividerLocation()?I18n.getString("RestoreEditorPane"):I18n.getString("MaximizeEditorPane");
+            minMaxDividerAction.putValue(Action.SHORT_DESCRIPTION,s);
+            minMaxDividerAction.putValue(Action.NAME,s);
+            if(splitpane.getDividerLocation()<splitpane.getMaximumDividerLocation()&&splitpane.getDividerLocation()>splitpane.getMinimumDividerLocation())
+              dividerLastPosition=splitpane.getDividerLocation();
+          }
+        });
+        dividerLastPosition=splitpane.getDividerLocation();
     }
 
     public void update(Observable obs,Object obj) {
@@ -2083,7 +2138,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
                 //if(grid.getRowCount()<50000)
                 chartAction.setEnabled(true);
                 //else
-                //    chartAction.setEnabled(false);              
+                //    chartAction.setEnabled(false);
 
                 TabPanel frame = new TabPanel("Table [" + grid.getRowCount() + " rows] ",
                                               getImage(Config.imageBase2 + "table.png"),
@@ -2098,6 +2153,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
                 openInExcel.setEnabled(false);
                 LimitedWriter lm = new LimitedWriter(50000);
                 try {
+                  if(!(r instanceof K.UnaryPrimitive&&0==((K.UnaryPrimitive)r).getPrimitiveAsInt()))
                     r.toString(lm,true);
                 }
                 catch (IOException ex) {
