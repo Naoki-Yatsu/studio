@@ -7,6 +7,7 @@ package org.netbeans.editor.ext.q;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.netbeans.editor.BaseTokenID;
 import org.netbeans.editor.TokenContext;
 import org.netbeans.editor.TokenContextPath;
@@ -44,14 +45,16 @@ public class QTokenContext extends TokenContext
     public static final int FLOAT_ID       = 16;
     public static final int LONG_ID        = 17;
     public static final int SHORT_ID       = 18;
-    public static final int REAL_ID        = 19;    
-    public static final int BYTE_ID        = 20; 
-    public static final int BOOLEAN_ID     = 21; 
+    public static final int REAL_ID        = 19;
+    public static final int BYTE_ID        = 20;
+    public static final int BOOLEAN_ID     = 21;
     public static final int DATETIME_ID    = 22;
-    public static final int COMMAND_ID     = 23; 
-    public static final int SYSTEM_ID      = 24; 
+    public static final int COMMAND_ID     = 23;
+    public static final int SYSTEM_ID      = 24;
     public static final int TIMESTAMP_ID   = 25;
     public static final int TIMESPAN_ID    = 26;
+
+    public static final int VARIABLE_ID    = 30;
     //    public static final int TEMPORAL_ID    = 10;
 
     //public static final BaseTokenID TEXT=    new BaseTokenID("text",    TEXT_ID);
@@ -86,6 +89,8 @@ public class QTokenContext extends TokenContext
     public static final BaseTokenID TIMESPAN=    new BaseTokenID("timespan",   TIMESPAN_ID);
     public static final BaseTokenID SYSTEM=      new BaseTokenID("system",     SYSTEM_ID);
     public static final BaseTokenID COMMAND=     new BaseTokenID("command",    COMMAND_ID);
+
+    public static final BaseTokenID VARIABLE=     new BaseTokenID("variable",    VARIABLE_ID);
 
 //    public static final BaseImageTokenID EOL= new BaseImageTokenID("EOL", EOL_ID, "\n");
 

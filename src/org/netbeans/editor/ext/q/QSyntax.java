@@ -8,6 +8,7 @@ package org.netbeans.editor.ext.q;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import org.netbeans.editor.Syntax;
 import org.netbeans.editor.TokenID;
 
@@ -36,7 +37,7 @@ public class QSyntax extends Syntax
     {
         int start=offset;
         Entry e=null;
-        
+
         while(offset<stopOffset)
         {
             int documentPosition=stopPosition-(stopOffset-offset);
@@ -47,7 +48,7 @@ public class QSyntax extends Syntax
             if(documentPosition==0)
                 if((c=='/')||(c=='\\') || (c=='-'))
                     state=30;
-            
+
             boolean found=false;
             for(int i=0;i<entries.length;i++)
             {
@@ -70,9 +71,13 @@ public class QSyntax extends Syntax
                         {
                             if(e.action==ACTION_MATCHANDPUTBACK)
                                 offset--;
-                            if(e.tokenID==QTokenContext.IDENTIFIER)
-                                if(map.get(new String(buffer,start,offset-start))!=null)
+                            if(e.tokenID==QTokenContext.IDENTIFIER) {
+                                if(map.get(new String(buffer,start,offset-start))!=null) {
                                     return QTokenContext.KEYWORD;
+                                } else if (QCompletionQuery.getVariableSet().contains(new String(buffer,start,offset-start))) {
+                                    return QTokenContext.VARIABLE;
+                                }
+                            }
                             return e.tokenID;
                         }
                         break;
@@ -87,16 +92,20 @@ public class QSyntax extends Syntax
         }
         if(lastBuffer)
         {
-            if(e!=null)
-            {
-                if(e.action==ACTION_LOOKSLIKE)
-                    if(e.tokenID==QTokenContext.IDENTIFIER)
-                        if(map.get(new String(buffer,start,offset-start))!=null)
+            if(e!=null) {
+                if(e.action==ACTION_LOOKSLIKE) {
+                    if(e.tokenID==QTokenContext.IDENTIFIER) {
+                        if(map.get(new String(buffer,start,offset-start))!=null) {
                             return QTokenContext.KEYWORD;
+                        } else if (QCompletionQuery.getVariableSet().contains(new String(buffer,start,offset-start))) {
+                            return QTokenContext.VARIABLE;
+                        }
+                    }
+                }
                 return e.tokenID;
-            }
-            else
+            } else {
                 return QTokenContext.UNKNOWN;
+            }
         }
         return null;
     }
@@ -430,7 +439,7 @@ public class QSyntax extends Syntax
         new Entry(80,"".toCharArray(),INIT,QTokenContext.OPERATOR,ACTION_MATCHANDPUTBACK),
         new Entry(81,"-".toCharArray(),80,QTokenContext.OPERATOR,ACTION_LOOKSLIKE),
         new Entry(81,"".toCharArray(),INIT,QTokenContext.OPERATOR,ACTION_MATCHANDPUTBACK),
-        
+
         new Entry(82,".".toCharArray(),255,QTokenContext.UNKNOWN,ACTION_LOOKSLIKE),
         new Entry(82,delimiters,INIT,QTokenContext.FLOAT,ACTION_MATCHANDPUTBACK),
 
@@ -438,7 +447,7 @@ public class QSyntax extends Syntax
         new Entry(83,delimiters,INIT,QTokenContext.TIMESPAN,ACTION_MATCHANDPUTBACK),
 
         new Entry(84,delimiters,INIT,QTokenContext.TIMESTAMP,ACTION_MATCHANDPUTBACK),
-        
+
         new Entry(85,digits,86,QTokenContext.UNKNOWN,ACTION_LOOKSLIKE),
         new Entry(85,delimiters,INIT,QTokenContext.TIMESPAN,ACTION_MATCHANDPUTBACK),
         new Entry(86,digits,87,QTokenContext.UNKNOWN,ACTION_LOOKSLIKE),
@@ -471,7 +480,7 @@ public class QSyntax extends Syntax
         new Entry(103,".".toCharArray(),104,QTokenContext.TIMESTAMP,ACTION_LOOKSLIKE),
         new Entry(103,delimiters,INIT,QTokenContext.TIMESTAMP,ACTION_MATCHANDPUTBACK),
         new Entry(104,digits,104,QTokenContext.TIMESTAMP,ACTION_LOOKSLIKE),
-        new Entry(104,delimiters,INIT,QTokenContext.TIMESTAMP,ACTION_MATCHANDPUTBACK),                
+        new Entry(104,delimiters,INIT,QTokenContext.TIMESTAMP,ACTION_MATCHANDPUTBACK),
 
         new Entry(105,delimiters,INIT,QTokenContext.TIMESPAN,ACTION_MATCHANDPUTBACK),
 

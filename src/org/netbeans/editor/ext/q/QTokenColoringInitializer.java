@@ -6,15 +6,17 @@
 
 package org.netbeans.editor.ext.q;
 
-import studio.kdb.Config;
 import java.awt.Color;
 import java.awt.Font;
+
 import org.netbeans.editor.Coloring;
 import org.netbeans.editor.Settings;
 import org.netbeans.editor.SettingsDefaults;
 import org.netbeans.editor.SettingsUtil;
 import org.netbeans.editor.TokenCategory;
 import org.netbeans.editor.TokenContextPath;
+
+import studio.kdb.Config;
 
 class QTokenColoringInitializer extends SettingsUtil.TokenColoringInitializer
 {
@@ -48,7 +50,9 @@ class QTokenColoringInitializer extends SettingsUtil.TokenColoringInitializer
     private Coloring SYSTEM_Coloring;
     private Coloring WHITESPACE_Coloring;
     private Coloring DEFAULT_Coloring;
-    
+
+    private Coloring VARIABLE_Coloring;
+
     private Coloring buildColoring(String name, Font font, Color defaultColor)
     {
         return new Coloring(font,
@@ -85,6 +89,8 @@ class QTokenColoringInitializer extends SettingsUtil.TokenColoringInitializer
         SYSTEM_Coloring=buildColoring("SYSTEM", SettingsDefaults.defaultFont,new Color(240,180,0));
         WHITESPACE_Coloring=buildColoring("WHITESPACE", SettingsDefaults.defaultFont,Color.black);
         DEFAULT_Coloring=buildColoring("DEFAULT", SettingsDefaults.defaultFont,Color.black);
+
+        VARIABLE_Coloring=buildColoring("VARIABLE", SettingsDefaults.defaultFont, new Color(0,127,0));
     }
 
     public Object getTokenColoring(TokenContextPath tokenContextPath,
@@ -145,6 +151,8 @@ class QTokenColoringInitializer extends SettingsUtil.TokenColoringInitializer
                     return SYSTEM_Coloring;
                 case QTokenContext.WHITESPACE_ID:
                     return WHITESPACE_Coloring;
+                case QTokenContext.VARIABLE_ID:
+                    return VARIABLE_Coloring;
                 default:
                     return DEFAULT_Coloring;
             }
