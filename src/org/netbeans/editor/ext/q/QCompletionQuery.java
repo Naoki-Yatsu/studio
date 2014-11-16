@@ -7,7 +7,9 @@ package org.netbeans.editor.ext.q;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import javax.swing.ImageIcon;
@@ -31,6 +33,16 @@ public class QCompletionQuery implements CompletionQuery
 {
     private static ImageIcon currentIcon;
     private static boolean lowerCase;
+
+    private static final String QUERY_DELIMITER = "QUERY_DELIMITER";
+
+    private static final String[] RESERVED_KEYWORDS = new String[] {
+            // keywords ref) QSyntax
+            "abs","acos","aj","aj0","all","and","any","asc","asin","asof","atan","attr","avg","avgs","bin","by","ceiling","cols","cor","cos","count","cov","cross","csv","cut","delete","deltas","desc","dev","differ","distinct","div","do","each","ej","enlist","eval","except","exec","exit","exp","fby","fills","first","fkeys","flip","floor","from","get","getenv","group","gtime","hclose","hcount","hdel","hopen","hsym","iasc","idesc","if","ij","in","insert","inter","inv","key","keys","last","like","list","lj","load","log","lower","lsq","ltime","ltrim","mavg","max","maxs","mcount","md5","mdev","med","meta","min","mins","mmax","mmin","mmu","mod","msum","neg","next","not","null","or","over","parse","peach","pj","plist","prd","prds","prev","prior","rand","rank","ratios","raze","read0","read1","reciprocal","reverse","rload","rotate","rsave","rtrim","save","scan","select","set","setenv","show","signum","sin","sqrt","ss","ssr","string","sublist","sum","sums","sv","system","tables","tan","til","trim","txf","type","uj","ungroup","union","update","upper","upsert","value","var","view","views","vs","wavg","where","while","within","wj","wj1","wsum","xasc","xbar","xcol","xcols","xdesc","xexp","xgroup","xkey","xlog","xprev","xrank"
+        };
+
+    private static final Set<String> variableSet = new HashSet<>(100);
+
 
     public CompletionQuery.Result query(JTextComponent component, int offset, SyntaxSupport support) {
         CompletionQuery.Result r = null;
@@ -119,46 +131,28 @@ public class QCompletionQuery implements CompletionQuery
                         } else if (tablename != null && !tablename.equals("") && !tablename.equals(" ")) {
                             queryName = "Columns";
                             currentIcon = Util.getImage(Config.imageBase2 + "column.png");
-                            c.k(new K.KCharacterVector("cols " + tablename));
+//                            c.k(new K.KCharacterVector("cols " + tablename));
+                            c.k(new K.KCharacterVector("(cols " + tablename + "),(`" +QUERY_DELIMITER + "),(system \"v\")"));
 
                         } else {
                             queryName = "Tables";
                             currentIcon = Util.getImage(Config.imageBase2 + "table.png");
-                            c.k(new K.KCharacterVector("tables[]"));
+                            //c.k(new K.KCharacterVector("tables[]"));
+                            c.k(new K.KCharacterVector("tables[]" + ",(`" +QUERY_DELIMITER + "),(system \"v\")"));
                         }
 
                         Object res = c.getResponse();
                         if (res instanceof K.KSymbolVector) {
-                            K.KSymbolVector items = (K.KSymbolVector) res;
-
-                            List allItems = new ArrayList();
-                            List searchItems = new ArrayList();
-
-                            for (int i = 0; i < items.getLength(); i++) {
-                                K.KSymbol symbol = (K.KSymbol) items.at(i);
-                                allItems.add(new BooleanAttribItem(symbol.s, offset, 0, false));
-
-                                if (prefix != "" && symbol.s.startsWith(prefix)) {
-                                    searchItems.add(new BooleanAttribItem(symbol.s.substring(prefix.length()), offset, 0, false));
-                                }
-                            }
-
-                            List result = new ArrayList();
-
-                            // if items which start with prefix is not zero, use only search items.
-                            if (searchItems.isEmpty()) {
-                                result = allItems;
-                            } else {
-                                result = searchItems;
-                            }
-
+                            // create result list
+                            List result = createResultList((K.KSymbolVector) res, prefix, offset);
                             r = new CompletionQuery.DefaultResult(component, queryName, result, offset, 0);
                         }
 
                     } catch (Throwable th) {
                     } finally {
-                        if (c != null)
+                        if (c != null) {
                             ConnectionPool.getInstance().freeConnection(s, c);
+                        }
                     }
                 }
             }
@@ -166,6 +160,69 @@ public class QCompletionQuery implements CompletionQuery
         }
 
         return r;
+    }
+
+    private static List createResultList(K.KSymbolVector items, String prefix, int offset) {
+
+        // prepare both of List
+        List<BooleanAttribItem> allItems = new ArrayList<>();
+        List<BooleanAttribItem> searchItems = new ArrayList<>();
+
+        // update variable set
+        variableSet.clear();
+
+        for (int i = 0; i < items.getLength(); i++) {
+            K.KSymbol symbol = (K.KSymbol) items.at(i);
+            String word = symbol.s;
+
+            // check delimiter
+            if (word.equals(QUERY_DELIMITER)) {
+                // for delimiter add "" instead
+                word = "";
+            }
+
+            // Prevent duplication of table
+            if (variableSet.contains(word)) {
+                continue;
+            } else {
+                variableSet.add(word);
+            }
+
+            allItems.add(new BooleanAttribItem(word, offset, 0, false));
+            if (prefix != "" && word.startsWith(prefix)) {
+                searchItems.add(new BooleanAttribItem(word.substring(prefix.length()), offset, 0, false));
+            }
+        }
+
+        // add reverved keywords only for searchItems
+        // if last item is not "", add delimiter
+        if (searchItems.size() > 0 && ! searchItems.get(searchItems.size() -1 ).getItemText().equals("")) {
+            searchItems.add(new BooleanAttribItem("", offset, 0, false));
+        }
+        for (int i = 0; i < RESERVED_KEYWORDS.length; i++) {
+            String word = RESERVED_KEYWORDS[i];
+            if (prefix != "" && word.startsWith(prefix)) {
+                searchItems.add(new BooleanAttribItem(word.substring(prefix.length()), offset, 0, false));
+            }
+        }
+
+        // if items which start with prefix is not zero, use only search items.
+        List<BooleanAttribItem> result;
+        if (searchItems.isEmpty()) {
+            result = allItems;
+        } else {
+            result = searchItems;
+        }
+        // If result is only one, add more item in order to prevent auto fill.
+        if (result.size() == 1) {
+            result.add(new BooleanAttribItem("", offset, 0, false));
+        }
+
+        return result;
+    }
+
+    public static Set<String> getVariableSet() {
+        return variableSet;
     }
 
 
