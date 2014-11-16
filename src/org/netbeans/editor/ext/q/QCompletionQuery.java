@@ -36,13 +36,17 @@ public class QCompletionQuery implements CompletionQuery
 
     private static final String QUERY_DELIMITER = "QUERY_DELIMITER";
 
+    // keywords ref. QSyntax class
     private static final String[] RESERVED_KEYWORDS = new String[] {
-            // keywords ref) QSyntax
-            "abs","acos","aj","aj0","all","and","any","asc","asin","asof","atan","attr","avg","avgs","bin","by","ceiling","cols","cor","cos","count","cov","cross","csv","cut","delete","deltas","desc","dev","differ","distinct","div","do","each","ej","enlist","eval","except","exec","exit","exp","fby","fills","first","fkeys","flip","floor","from","get","getenv","group","gtime","hclose","hcount","hdel","hopen","hsym","iasc","idesc","if","ij","in","insert","inter","inv","key","keys","last","like","list","lj","load","log","lower","lsq","ltime","ltrim","mavg","max","maxs","mcount","md5","mdev","med","meta","min","mins","mmax","mmin","mmu","mod","msum","neg","next","not","null","or","over","parse","peach","pj","plist","prd","prds","prev","prior","rand","rank","ratios","raze","read0","read1","reciprocal","reverse","rload","rotate","rsave","rtrim","save","scan","select","set","setenv","show","signum","sin","sqrt","ss","ssr","string","sublist","sum","sums","sv","system","tables","tan","til","trim","txf","type","uj","ungroup","union","update","upper","upsert","value","var","view","views","vs","wavg","where","while","within","wj","wj1","wsum","xasc","xbar","xcol","xcols","xdesc","xexp","xgroup","xkey","xlog","xprev","xrank"
+            // plus datatypes : "boolean","guid","byte","short","int","long","real","float","char","symbol","timestamp","month","date","datetime","timespan","minute","second","time"
+            //    "abs","acos","aj","aj0","all","and","any","asc","asin","asof","atan","attr","avg","avgs","bin","by","ceiling","cols","cor","cos","count","cov","cross","csv","cut","delete","deltas","desc","dev","differ","distinct","div","do","each","ej","enlist","eval","except","exec","exit","exp","fby","fills","first","fkeys","flip","floor","from","get","getenv","group","gtime","hclose","hcount","hdel","hopen","hsym","iasc","idesc","if","ij","in","insert","inter","inv","key","keys","last","like","list","lj","load","log","lower","lsq","ltime","ltrim","mavg","max","maxs","mcount","md5","mdev","med","meta","min","mins","mmax","mmin","mmu","mod","msum","neg","next","not","null","or","over","parse","peach","pj","plist","prd","prds","prev","prior","rand","rank","ratios","raze","read0","read1","reciprocal","reverse","rload","rotate","rsave","rtrim","save","scan","select","set","setenv","show","signum","sin","sqrt","ss","ssr","string","sublist","sum","sums","sv","system","tables","tan","til","trim","txf","type","uj","ungroup","union","update","upper","upsert","value","var","view","views","vs","wavg","where","while","within","wj","wj1","wsum","xasc","xbar","xcol","xcols","xdesc","xexp","xgroup","xkey","xlog","xprev","xrank"
+            "abs","acos","aj","aj0","all","and","any","asc","asin","asof","atan","attr","avg","avgs","bin","boolean","by","byte","ceiling","char","cols","cor","cos","count","cov","cross","csv","cut","date","datetime","delete","deltas","desc","dev","differ","distinct","div","do","each","ej","enlist","eval","except","exec","exit","exp","fby","fills","first","fkeys","flip","float","floor","from","get","getenv","group","gtime","guid","hclose","hcount","hdel","hopen","hsym","iasc","idesc","if","ij","in","insert","int","inter","inv","key","keys","last","like","list","lj","load","log","long","lower","lsq","ltime","ltrim","mavg","max","maxs","mcount","md5","mdev","med","meta","min","mins","minute","mmax","mmin","mmu","mod","month","msum","neg","next","not","null","or","over","parse","peach","pj","plist","prd","prds","prev","prior","rand","rank","ratios","raze","read0","read1","real","reciprocal","reverse","rload","rotate","rsave","rtrim","save","scan","second","select","set","setenv","short","show","signum","sin","sqrt","ss","ssr","string","sublist","sum","sums","sv","symbol","system","tables","tan","til","time","timespan","timestamp","trim","txf","type","uj","ungroup","union","update","upper","upsert","value","var","view","views","vs","wavg","where","while","within","wj","wj1","wsum","xasc","xbar","xcol","xcols","xdesc","xexp","xgroup","xkey","xlog","xprev","xrank"
         };
 
     private static final Set<String> variableSet = new HashSet<>(100);
 
+    private static final String QUERY_TITLE_COLUMN = "Columns";
+    private static final String QUERY_TITLE_TABLE = "Tables";
 
     public CompletionQuery.Result query(JTextComponent component, int offset, SyntaxSupport support) {
         CompletionQuery.Result r = null;
@@ -114,28 +118,40 @@ public class QCompletionQuery implements CompletionQuery
                         }
                     }
 
+                    // delete "`" in the top of prefix
+                    if (prefix.startsWith("`")) {
+                        prefix = prefix.substring(1);
+                    }
+
                     kx.c c = null;
+                    String queryTitle = null;
 
                     try {
                         c = ConnectionPool.getInstance().leaseConnection(s);
                         ConnectionPool.getInstance().checkConnected(c);
 
-                        String queryName = "";
-
                         if (text.endsWith(".")) {
-                            queryName = "Columns";
+                            queryTitle = QUERY_TITLE_COLUMN + ": " + tablename + "  ";
                             tablename = text.substring(0, text.length() - 1);
                             currentIcon = Util.getImage(Config.imageBase2 + "column.png");
                             c.k(new K.KCharacterVector("cols " + tablename));
 
                         } else if (tablename != null && !tablename.equals("") && !tablename.equals(" ")) {
-                            queryName = "Columns";
+                            if (prefix.length() > 1) {
+                                queryTitle = QUERY_TITLE_COLUMN + ": " + tablename + " - " + prefix + "  ";
+                            } else {
+                                queryTitle = QUERY_TITLE_COLUMN + ": " + tablename;
+                            }
                             currentIcon = Util.getImage(Config.imageBase2 + "column.png");
 //                            c.k(new K.KCharacterVector("cols " + tablename));
                             c.k(new K.KCharacterVector("(cols " + tablename + "),(`" +QUERY_DELIMITER + "),(system \"v\")"));
 
                         } else {
-                            queryName = "Tables";
+                            if (prefix.length() > 1) {
+                                queryTitle = QUERY_TITLE_TABLE + " - " + prefix + "  ";
+                            } else {
+                                queryTitle = QUERY_TITLE_TABLE;
+                            }
                             currentIcon = Util.getImage(Config.imageBase2 + "table.png");
                             //c.k(new K.KCharacterVector("tables[]"));
                             c.k(new K.KCharacterVector("tables[]" + ",(`" +QUERY_DELIMITER + "),(system \"v\")"));
@@ -144,11 +160,27 @@ public class QCompletionQuery implements CompletionQuery
                         Object res = c.getResponse();
                         if (res instanceof K.KSymbolVector) {
                             // create result list
-                            List result = createResultList((K.KSymbolVector) res, prefix, offset);
-                            r = new CompletionQuery.DefaultResult(component, queryName, result, offset, 0);
+                            List result = createResultList((K.KSymbolVector) res, prefix, offset, queryTitle.startsWith(QUERY_TITLE_COLUMN));
+                            r = new CompletionQuery.DefaultResult(component, queryTitle, result, offset, 0);
                         }
 
                     } catch (Throwable th) {
+                        List<BooleanAttribItem> result = new ArrayList<>();
+                        result.add(new BooleanAttribItem("", offset, 0, false));
+                        result.add(new BooleanAttribItem("[Query Error]", offset, 0, false));
+                        // error reason
+                        String errorReason = th.toString();
+                        if (th.toString().length() > 100) {
+                            errorReason.substring(0, 100);
+                        }
+                        result.add(new BooleanAttribItem(errorReason, offset, 0, false));
+
+                        if (queryTitle != null) {
+                            queryTitle = "[ERROR] " + queryTitle;
+                        } else {
+                            queryTitle = "[ERROR]";
+                        }
+                        r = new CompletionQuery.DefaultResult(component, queryTitle, result, offset, 0);
                     } finally {
                         if (c != null) {
                             ConnectionPool.getInstance().freeConnection(s, c);
@@ -162,7 +194,7 @@ public class QCompletionQuery implements CompletionQuery
         return r;
     }
 
-    private static List createResultList(K.KSymbolVector items, String prefix, int offset) {
+    private static List createResultList(K.KSymbolVector items, String prefix, int offset, boolean isColumnQuery) {
 
         // prepare both of List
         List<BooleanAttribItem> allItems = new ArrayList<>();
@@ -171,25 +203,43 @@ public class QCompletionQuery implements CompletionQuery
         // update variable set
         variableSet.clear();
 
+        // check delimiter
+        boolean isBeforeDelimiter = true;
+        boolean existSearchItem = false;
+
         for (int i = 0; i < items.getLength(); i++) {
             K.KSymbol symbol = (K.KSymbol) items.at(i);
             String word = symbol.s;
+
+            // blank check
+            if (word.trim().equals("")) {
+                continue;
+            }
 
             // check delimiter
             if (word.equals(QUERY_DELIMITER)) {
                 // for delimiter add "" instead
                 word = "";
+                isBeforeDelimiter = false;
+                allItems.add(new BooleanAttribItem(word, offset, 0, false));
+                // if it is better to show blank line is search list, comment out.
+//                searchItems.add(new BooleanAttribItem(word, offset, 0, false));
+                continue;
             }
 
             // Prevent duplication of table
             if (variableSet.contains(word)) {
                 continue;
             } else {
-                variableSet.add(word);
+                // Don't add columns
+                if (!(isColumnQuery && isBeforeDelimiter)) {
+                    variableSet.add(word);
+                }
             }
 
             allItems.add(new BooleanAttribItem(word, offset, 0, false));
             if (prefix != "" && word.startsWith(prefix)) {
+                existSearchItem = true;
                 searchItems.add(new BooleanAttribItem(word.substring(prefix.length()), offset, 0, false));
             }
         }
@@ -202,17 +252,19 @@ public class QCompletionQuery implements CompletionQuery
         for (int i = 0; i < RESERVED_KEYWORDS.length; i++) {
             String word = RESERVED_KEYWORDS[i];
             if (prefix != "" && word.startsWith(prefix)) {
+                existSearchItem = true;
                 searchItems.add(new BooleanAttribItem(word.substring(prefix.length()), offset, 0, false));
             }
         }
 
         // if items which start with prefix is not zero, use only search items.
         List<BooleanAttribItem> result;
-        if (searchItems.isEmpty()) {
-            result = allItems;
-        } else {
+        if (existSearchItem) {
             result = searchItems;
+        } else {
+            result = allItems;
         }
+
         // If result is only one, add more item in order to prevent auto fill.
         if (result.size() == 1) {
             result.add(new BooleanAttribItem("", offset, 0, false));
