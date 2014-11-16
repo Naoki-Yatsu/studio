@@ -6,22 +6,30 @@
 
 package studio.ui;
 
-import studio.kdb.K;
-import studio.kdb.KTableModel;
-import studio.kdb.ToDouble;
+import java.util.TimeZone;
+
+import javax.swing.JFrame;
+
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.general.SeriesException;
-import org.jfree.data.time.*;
+import org.jfree.data.time.Day;
+import org.jfree.data.time.Millisecond;
+import org.jfree.data.time.Minute;
+import org.jfree.data.time.Month;
+import org.jfree.data.time.Second;
+import org.jfree.data.time.TimeSeries;
+import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
-import javax.swing.*;
-import java.util.TimeZone;
 import studio.kdb.Config;
+import studio.kdb.K;
+import studio.kdb.KTableModel;
+import studio.kdb.ToDouble;
 
 public class LineChart {
     public ChartPanel chartPanel;
@@ -94,18 +102,18 @@ public class LineChart {
                             }
                         }
                         else if (klass == K.KTimestampVector.class) {
-                            series = new TimeSeries(table.getColumnName(col),Day.class);
+                            series = new TimeSeries(table.getColumnName(col),Millisecond.class);
                             K.KTimestampVector dates = (K.KTimestampVector) table.getColumn(0);
 
                             for (int row = 0;row < dates.getLength();row++) {
                                 K.KTimestamp date = (K.KTimestamp) dates.at(row);
-                                Day day = new Day(new java.util.Date(date.toTimestamp().getTime()),tz);
+                                Millisecond ms = new Millisecond(date.toTimestamp(),tz);
 
                                 Object o = table.getValueAt(row,col);
                                 if (o instanceof K.KBase)
                                     if (!((K.KBase) o).isNull())
                                         if (o instanceof ToDouble)
-                                            series.addOrUpdate(day,((ToDouble) o).toDouble());
+                                            series.addOrUpdate(ms,((ToDouble) o).toDouble());
                             }
                         }
                         else if (klass == K.KTimespanVector.class) {
