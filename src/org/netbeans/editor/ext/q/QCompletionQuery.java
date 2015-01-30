@@ -61,7 +61,7 @@ public class QCompletionQuery implements CompletionQuery
                     String text = doc.getText(0, offset);
                     String latterText = doc.getText(offset, doc.getLength() - offset);
 
-                    // get text of this line
+                    // get text of this line(before cursor, after cursor)
                     String[] lines = text.split("\n");
                     String foreThisLine = "";
                     if (!text.endsWith("\n") && lines.length > 0) {
@@ -73,7 +73,7 @@ public class QCompletionQuery implements CompletionQuery
                         latterThisLine = latterlines[0];
                     }
 
-                    StringTokenizer t = new StringTokenizer(text, " %$!&()=~#;:><?,+-'\"/*\n");
+                    StringTokenizer t = new StringTokenizer(text, " %$!&()=~#;:><?,+-'\"/*\n`[]{}");
                     if (text.endsWith("\n")) {
                         text = "";
                     } else {
@@ -86,9 +86,9 @@ public class QCompletionQuery implements CompletionQuery
                     String tablename = "";
 
                     // edit fore of curser
-                    // If end without " " or ",", set last word as prefix
+                    // If end with words[a-zA-Z_0-9] , set last words as prefix
                     String prefix = "";
-                    if (!foreThisLine.endsWith(" ") && !foreThisLine.endsWith(",")) {
+                    if (foreThisLine.matches(".*\\w$")) {
                         StringTokenizer token = new StringTokenizer(foreThisLine, " %$!&()=~#;:><?,+-'\"/*\n");
                         while (token.hasMoreTokens()) {
                             prefix = token.nextToken();
@@ -144,7 +144,7 @@ public class QCompletionQuery implements CompletionQuery
                             }
                             currentIcon = Util.getImage(Config.imageBase2 + "column.png");
 //                            c.k(new K.KCharacterVector("cols " + tablename));
-                            c.k(new K.KCharacterVector("(cols " + tablename + "),(`" +QUERY_DELIMITER + "),(system \"v\")"));
+                            c.k(new K.KCharacterVector("(cols " + tablename + "),(`" +QUERY_DELIMITER + "),tables[],views[],(system \"f\"),(system \"v\")"));
 
                         } else {
                             if (prefix.length() > 1) {
@@ -154,7 +154,7 @@ public class QCompletionQuery implements CompletionQuery
                             }
                             currentIcon = Util.getImage(Config.imageBase2 + "table.png");
                             //c.k(new K.KCharacterVector("tables[]"));
-                            c.k(new K.KCharacterVector("tables[]" + ",(`" +QUERY_DELIMITER + "),(system \"v\")"));
+                            c.k(new K.KCharacterVector("tables[]" + ",(`" +QUERY_DELIMITER + "),views[],(system \"f\"),(system \"v\")"));
                         }
 
                         Object res = c.getResponse();
