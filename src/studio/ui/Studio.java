@@ -103,6 +103,7 @@ import org.netbeans.editor.ext.ExtKit;
 import org.netbeans.editor.ext.ExtSettingsInitializer;
 import org.netbeans.editor.ext.q.QSettingsInitializer;
 
+import studio.chart.SmartChartManager;
 import studio.kdb.Config;
 import studio.kdb.ConnectionPool;
 import studio.kdb.DictionaryModel;
@@ -177,6 +178,11 @@ public class Studio extends JPanel implements Observer,WindowListener {
     public static java.util.List windowList = Collections.synchronizedList(new LinkedList());
     private int menuShortcutKeyMask = java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 
+    // Additional Items
+    private UserAction smartChartAction;
+    private SmartChartManager smartChart;
+    
+    
     public void refreshFrameTitle() {
         String s = (String) textArea.getDocument().getProperty("filename");
         if (s == null)
@@ -372,6 +378,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
         saveAsFileAction.setEnabled(true);
         exportAction.setEnabled(false);
         chartAction.setEnabled(false);
+        smartChartAction.setEnabled(true);
         openInExcel.setEnabled(false);
         stopAction.setEnabled(false);
         executeAction.setEnabled(true);
@@ -1287,7 +1294,16 @@ public class Studio extends JPanel implements Observer,WindowListener {
             }
         };
 
-
+        smartChartAction = new UserAction(I18n.getString("SmartChart"),
+                                    Util.getImage(Config.imageBase2 + "chart.png"),
+                                    "Open Smart Chart Panel",
+                                    new Integer(KeyEvent.VK_E),
+                                    null) {
+            public void actionPerformed(ActionEvent e) {
+                smartChart.showPanel();
+            }
+        };
+        
         stopAction = new UserAction(I18n.getString("Stop"),
                                     getImage(Config.imageBase2 + "stop.png"),
                                     "Stop the query",
@@ -1495,7 +1511,9 @@ public class Studio extends JPanel implements Observer,WindowListener {
         menu.add(new JMenuItem(exportAction));
         menu.addSeparator();
         menu.add(new JMenuItem(chartAction));
-
+        menu.addSeparator();
+        menu.add(new JMenuItem(smartChartAction));
+        
         String[] mru = Config.getInstance().getMRUFiles();
 
         if (mru.length > 0) {
@@ -1770,6 +1788,9 @@ public class Studio extends JPanel implements Observer,WindowListener {
 
             toolbar.add(chartAction);
             toolbar.addSeparator();
+            
+            toolbar.add(smartChartAction);
+            toolbar.addSeparator();
 
             toolbar.add(undoAction);
             toolbar.add(redoAction);
@@ -1972,6 +1993,9 @@ public class Studio extends JPanel implements Observer,WindowListener {
           }
         });
         dividerLastPosition=splitpane.getDividerLocation();
+        
+        // Additional
+        setupAdditionalItems();
     }
 
     public void update(Observable obs,Object obj) {
@@ -1997,6 +2021,10 @@ public class Studio extends JPanel implements Observer,WindowListener {
             }
     }
 
+    private void setupAdditionalItems() {
+        smartChart = SmartChartManager.getInstance(this);
+    }
+    
     public static void init(String[] args) {
         try {
             String filename = null;
@@ -2026,6 +2054,13 @@ public class Studio extends JPanel implements Observer,WindowListener {
         }
     }
 
+    public KTableModel getKTableModel() {
+        if (table == null) {
+            return null;
+        }
+        return (KTableModel) table.getModel();
+    }
+    
     public void refreshQuery() {
         table = null;
         executeK4Query(lastQuery);
@@ -2058,6 +2093,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
         executeCurrentLineAction.setEnabled(false);
         exportAction.setEnabled(false);
         chartAction.setEnabled(false);
+        smartChartAction.setEnabled(true);
         openInExcel.setEnabled(false);
 
         executeK4Query(text);

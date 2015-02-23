@@ -9,16 +9,24 @@ Original Version
 Java Version
 ----
 
-1.7 or greater
+1.8
+
+Required Library
+----
+
+* jfreechart-1.0.19.jar
+* jcommon-1.0.23.jar
+* commons-lang3-3.3.2.jar
 
 Bug Fix
 -----------
 
 * timestamp chart
 
-New FUnctions
+New Functions
 --------------
 
+* Create multi-axis chart.
 * Show dictionary with table style.
 * Completion enhancement
    - begins-with match completion
@@ -27,4 +35,16 @@ New FUnctions
 * Syntax highlight enhancement
    - variable highlight with dark green, variables will be updated when use completion(ctrl+space)
 * Copy String (char list) into clipboard.
+
+
+Multi-axis Chart Function
+--------------
+
+
+
+
+
+
+
+
 
