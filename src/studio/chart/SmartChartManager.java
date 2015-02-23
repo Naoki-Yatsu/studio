@@ -12,6 +12,7 @@ import java.awt.event.MouseEvent;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.swing.BoxLayout;
@@ -34,7 +35,9 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
+import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.Plot;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 
 import studio.kdb.Config;
@@ -48,7 +51,7 @@ public class SmartChartManager {
     // Filed
     // //////////////////////////////////////
 
-    private static final int PANEL_WIDTH = 680;
+    private static final int PANEL_WIDTH = 730;
     private static final int PANEL_HEIGHT = 560;
     
     private static final int TEXT_FIELD_COLUMNS_NORMAL = 6;
@@ -93,8 +96,9 @@ public class SmartChartManager {
     private JTextField titleField = new GuideTextField("Title", TEXT_FIELD_COLUMNS_LONG);
     private JTextField xSizeField = new GuideTextField("X size", String.valueOf(SmartChartSetting.WINDOW_X_DEFAULT), TEXT_FIELD_COLUMNS_NORMAL);
     private JTextField ySizeField = new GuideTextField("Y size", String.valueOf(SmartChartSetting.WINDOW_Y_DEFAULT), TEXT_FIELD_COLUMNS_NORMAL);
-    private JCheckBox newChartFrameCheckBox = new JCheckBox("New Frame", true);
     private JComboBox<ChartTheme> themeCombo = new JComboBox<>(ChartTheme.values());
+    private JCheckBox newChartFrameCheckBox = new JCheckBox("New Frame", true);
+    private JCheckBox crosshairOverlayCheckBox = new JCheckBox("Cross-hair", false);
     
     // Open/Close label
     private JLabel y1Left2Label = new JLabel(" + Y1 Left2");
@@ -181,7 +185,12 @@ public class SmartChartManager {
                 chartFrame = creatChartFrame();
             }
             
-            chartPanel = new ChartPanel(chart);
+            // add overlay
+            if (crosshairOverlayCheckBox.isSelected()) {
+                chartPanel = new CrosshairOverlayChartPanel(chart);
+            } else {
+                chartPanel = new ChartPanel(chart);
+            }
             chartPanel.setMouseZoomable(true, false);
             updateChart();
             
@@ -232,22 +241,22 @@ public class SmartChartManager {
                 case 4:
                     XYPlot plot4 = plots.get(3);
                     setupRangeAxis(plot4.getRangeAxis(), setting.getY4LeftLabel(), setting.getY4LeftMin(), setting.getY4LeftMax(), setting.isY4LeftIncludeZero());
-                    setupPlot(plot4, setting.isxShowLine(), setting.isY4LeftShowLine());
+                    setupPlot(plot4, setting.getX1MarkerLines(), setting.getY4LeftMarkerLines());
                 case 3:
                     XYPlot plot3 = plots.get(2);
                     setupRangeAxis(plot3.getRangeAxis(), setting.getY3LeftLabel(), setting.getY3LeftMin(), setting.getY3LeftMax(), setting.isY3LeftIncludeZero());
-                    setupPlot(plot3, setting.isxShowLine(), setting.isY3LeftShowLine());
+                    setupPlot(plot3, setting.getX1MarkerLines(), setting.getY3LeftMarkerLines());
                 case 2:
                     XYPlot plot2 = plots.get(1);
                     setupRangeAxis(plot2.getRangeAxis(), setting.getY2LeftLabel(), setting.getY2LeftMin(), setting.getY2LeftMax(), setting.isY2LeftIncludeZero());
-                    setupPlot(plot2, setting.isxShowLine(), setting.isY2LeftShowLine());
+                    setupPlot(plot2, setting.getX1MarkerLines(), setting.getY2LeftMarkerLines());
                     if (plot2.getRangeAxisCount() == 2) {
                         setupRangeAxis(plot2.getRangeAxis(1), setting.getY2RightLabel(), setting.getY2RightMin(), setting.getY2RightMax(), setting.isY2RightIncludeZero());
                     }
                 default:
                     XYPlot plot1 = plots.get(0);
                     setupRangeAxis(plot1.getRangeAxis(), setting.getY1Label(), setting.getY1Min(), setting.getY1Max(), setting.isY1IncludeZero());
-                    setupPlot(plot1, setting.isxShowLine(), setting.isY1ShowLine());
+                    setupPlot(plot1, setting.getX1MarkerLines(), setting.getY1MarkerLines());
                     if (plot1.getRangeAxisCount() == 2) {
                         setupRangeAxis(plot1.getRangeAxis(1), setting.getY1RightLabel(), setting.getY1RightMin(), setting.getY1RightMax(), setting.isY1RightIncludeZero());
                     }
@@ -258,7 +267,7 @@ public class SmartChartManager {
             // one plot
             XYPlot xyPlot = (XYPlot) plot;
             setupRangeAxis(xyPlot.getRangeAxis(), setting.getY1Label(), setting.getY1Min(), setting.getY1Max(), setting.isY1IncludeZero());
-            setupPlot(xyPlot, setting.isxShowLine(), setting.isY1ShowLine());
+            setupPlot(xyPlot, setting.getX1MarkerLines(), setting.getY1MarkerLines());
             if (xyPlot.getRangeAxisCount() == 2) {
                 setupRangeAxis(xyPlot.getRangeAxis(1), setting.getY1RightLabel(), setting.getY1RightMin(), setting.getY1RightMax(), setting.isY1RightIncludeZero());
             }
@@ -300,15 +309,29 @@ public class SmartChartManager {
         }
     }
     
-    private void setupPlot(Plot plot, boolean showLineDomain, boolean showLineRange) {
-        // show line
+    private void setupPlot(Plot plot, List<Double> markerLinesDomain, List<Double> markerLinesRange) {
+        // add marker line
         if (plot instanceof XYPlot) {
             XYPlot xyPlot = (XYPlot) plot;
-            xyPlot.setDomainZeroBaselineVisible(showLineDomain);
-            xyPlot.setRangeZeroBaselineVisible(showLineRange);
+            if (!markerLinesDomain.isEmpty()) {
+                for (Double value : markerLinesDomain) {
+                    Marker marker = new ValueMarker(value);
+                    // marker.setLabelOffsetType(LengthAdjustmentType.EXPAND);
+                    marker.setPaint(Color.BLACK);
+                    xyPlot.addDomainMarker(marker);
+                }
+            }
+            if (!markerLinesRange.isEmpty()) {
+                for (Double value : markerLinesRange) {
+                    Marker marker = new ValueMarker(value);
+                    // marker.setLabelOffsetType(LengthAdjustmentType.EXPAND);
+                    marker.setPaint(Color.BLACK);
+                    xyPlot.addRangeMarker(marker);
+                }
+            }
         }
     }
-
+    
     private void copySettings() {
         // Window
         setting.setTitle(titleField.getText());
@@ -331,8 +354,6 @@ public class SmartChartManager {
         setting.setxMax(evalDoubleField(xPanel.maxField));
         setting.setY1Min(evalDoubleField(y1Panel.minField));
         setting.setY1Max(evalDoubleField(y1Panel.maxField));
-        //
-        //
         setting.setY1RightMin(evalDoubleField(y1RightPanel.minField));
         setting.setY1RightMax(evalDoubleField(y1RightPanel.maxField));
         setting.setY2LeftMin(evalDoubleField(y2LeftPanel.minField));
@@ -353,15 +374,12 @@ public class SmartChartManager {
         setting.setY3LeftIncludeZero(y3LeftPanel.includeZeroCheckbox.isSelected());
         setting.setY4LeftIncludeZero(y4LeftPanel.includeZeroCheckbox.isSelected());
         
-        // Show line
-        setting.setxShowLine(xPanel.showLineCheckbox.isSelected());
-        setting.setY1ShowLine(y1Panel.showLineCheckbox.isSelected());
-        //
-        //
-        setting.setY2LeftShowLine(y2LeftPanel.showLineCheckbox.isSelected());
-        //
-        setting.setY3LeftShowLine(y3LeftPanel.showLineCheckbox.isSelected());
-        setting.setY4LeftShowLine(y4LeftPanel.showLineCheckbox.isSelected());
+        // Marker lines
+        setting.setX1MarkerLines(evalMarkerLine(xPanel.markerLineField.getText()));
+        setting.setY1MarkerLines(evalMarkerLine(y1Panel.markerLineField.getText()));
+        setting.setY2LeftMarkerLines(evalMarkerLine(y2LeftPanel.markerLineField.getText()));
+        setting.setY3LeftMarkerLines(evalMarkerLine(y3LeftPanel.markerLineField.getText()));
+        setting.setY4LeftMarkerLines(evalMarkerLine(y4LeftPanel.markerLineField.getText()));
         
         // Chart Type
         setting.setY1Chart((ChartType) y1Panel.chartCombo.getSelectedItem());
@@ -415,6 +433,20 @@ public class SmartChartManager {
         throw new RuntimeException();
     }
     
+    private List<Double> evalMarkerLine(String markerLineStr) {
+        if (StringUtils.isBlank(markerLineStr)) {
+            return Collections.emptyList();
+        }
+        
+        List<Double> markerLines = new ArrayList<>();
+        for (String value : markerLineStr.split(",")) {
+            if (NumberUtils.isNumber(value.trim())) {
+                markerLines.add(Double.valueOf(value.trim()));
+            }
+        }
+        return markerLines;
+    }
+    
     /**
      * evaluate weight.
      * weight must be between 0.1 ~ 10.0
@@ -462,6 +494,7 @@ public class SmartChartManager {
         ((GuideTextField) xSizeField).clearText(String.valueOf(SmartChartSetting.WINDOW_X_DEFAULT));
         ((GuideTextField) ySizeField).clearText(String.valueOf(SmartChartSetting.WINDOW_Y_DEFAULT));
         newChartFrameCheckBox.setSelected(true);
+        crosshairOverlayCheckBox.setSelected(false);
         themeCombo.setSelectedIndex(0);
         
         // Additional panels
@@ -596,6 +629,7 @@ public class SmartChartManager {
         windowPanel.add(xSizeField);
         windowPanel.add(ySizeField);
         windowPanel.add(newChartFrameCheckBox);
+        windowPanel.add(crosshairOverlayCheckBox);
         windowPanel.add(themeCombo);
         
         // Y Open/Close
@@ -714,6 +748,8 @@ public class SmartChartManager {
         layout.setConstraints(themeCombo, gbc);
         gbc.gridx++;
         layout.setConstraints(newChartFrameCheckBox, gbc);
+        gbc.gridx++;
+        layout.setConstraints(crosshairOverlayCheckBox, gbc);
     }
     
     private void intOpenCloseLabels() {
@@ -789,27 +825,27 @@ public class SmartChartManager {
         y1LeftPanel.minField.setEnabled(false);
         y1LeftPanel.maxField.setEnabled(false);
         y1LeftPanel.includeZeroCheckbox.setEnabled(false);
-        y1LeftPanel.showLineCheckbox.setEnabled(false);
+        y1LeftPanel.markerLineField.setEnabled(false);
         y1LeftPanel.weightField.setEnabled(false);
         
         y1LeftPanel.labelField.setBackground(Color.GRAY);
         y1LeftPanel.minField.setBackground(Color.GRAY);
         y1LeftPanel.maxField.setBackground(Color.GRAY);
         y1LeftPanel.includeZeroCheckbox.setBackground(Color.GRAY);
-        y1LeftPanel.showLineCheckbox.setBackground(Color.GRAY);
+        y1LeftPanel.markerLineField.setBackground(Color.GRAY);
         y1LeftPanel.weightField.setBackground(Color.GRAY);
         
         // Y1 Right
         y1RightPanel.weightField.setEnabled(false);
-        y1RightPanel.showLineCheckbox.setEnabled(false);
+        y1RightPanel.markerLineField.setEnabled(false);
         y1RightPanel.weightField.setBackground(Color.GRAY);
-        y1RightPanel.showLineCheckbox.setBackground(Color.GRAY);
+        y1RightPanel.markerLineField.setBackground(Color.GRAY);
         
         // Y2 Right
         y2RightPanel.weightField.setEnabled(false);
-        y2RightPanel.showLineCheckbox.setEnabled(false);
+        y2RightPanel.markerLineField.setEnabled(false);
         y2RightPanel.weightField.setBackground(Color.GRAY);
-        y2RightPanel.showLineCheckbox.setBackground(Color.GRAY);
+        y2RightPanel.markerLineField.setBackground(Color.GRAY);
     }
     
     private void openClosePanel(JPanel panel, JLabel label) {
@@ -830,11 +866,11 @@ public class SmartChartManager {
         @SuppressWarnings("unused")
         private String itemName;
 
-        private JTextField labelField;
-        private JTextField minField;
-        private JTextField maxField;
+        private JTextField labelField = new GuideTextField("Label", TEXT_FIELD_COLUMNS_LONG);
+        private JTextField minField = new GuideTextField("Min", TEXT_FIELD_COLUMNS_NORMAL);
+        private JTextField maxField = new GuideTextField("Max", TEXT_FIELD_COLUMNS_NORMAL);
         private JCheckBox includeZeroCheckbox = new JCheckBox("Inc. 0", false);
-        private JCheckBox showLineCheckbox = new JCheckBox("Line", false);
+        private JTextField markerLineField = new GuideTextField("Markers(,)", TEXT_FIELD_COLUMNS_NORMAL);
         private JComboBox<ChartType> chartCombo = new JComboBox<>(ChartType.values());
         private JComboBox<String> columnNameCombo = new JComboBox<>(new String[]{DEFAULT_COLUMN_NAME});
         private JTextField weightField = new GuideTextField("weight", "1", TEXT_FIELD_COLUMNS_SHORT);
@@ -843,10 +879,6 @@ public class SmartChartManager {
             this.itemName = itemName;
             
             // Component
-            labelField = new GuideTextField("Label", TEXT_FIELD_COLUMNS_LONG);
-            minField = new GuideTextField("Min", TEXT_FIELD_COLUMNS_NORMAL);
-            maxField = new GuideTextField("Max", TEXT_FIELD_COLUMNS_NORMAL);
-            
             columnNameCombo.setPreferredSize(new Dimension(120, 25));
             
             // int panel
@@ -854,7 +886,7 @@ public class SmartChartManager {
             this.add(minField);
             this.add(maxField);
             this.add(includeZeroCheckbox);
-            this.add(showLineCheckbox);
+            this.add(markerLineField);
             this.add(chartCombo);
             this.add(columnNameCombo);
             this.add(weightField);
@@ -876,7 +908,7 @@ public class SmartChartManager {
             gbc.gridx++;
             layout.setConstraints(includeZeroCheckbox, gbc);
             gbc.gridx++;
-            layout.setConstraints(showLineCheckbox, gbc);
+            layout.setConstraints(markerLineField, gbc);
             gbc.gridx++;
             layout.setConstraints(chartCombo, gbc);
             gbc.gridx++;
@@ -890,7 +922,7 @@ public class SmartChartManager {
             ((GuideTextField) minField).clearText("");
             ((GuideTextField) maxField).clearText("");
             includeZeroCheckbox.setSelected(false);
-            showLineCheckbox.setSelected(false);
+            ((GuideTextField) markerLineField).clearText("");
             chartCombo.setSelectedIndex(0);
             columnNameCombo.removeAllItems();
             columnNameCombo.addItem(DEFAULT_COLUMN_NAME);

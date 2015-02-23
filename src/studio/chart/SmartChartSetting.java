@@ -1,5 +1,8 @@
 package studio.chart;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.commons.lang3.StringUtils;
 
 public class SmartChartSetting {
@@ -57,15 +60,15 @@ public class SmartChartSetting {
     private boolean y3LeftIncludeZero;
     private boolean y4LeftIncludeZero;
     
-    // Show line zero
-    private boolean xShowLine;
-    private boolean y1ShowLine;
-    // private boolean y1LeftShowLine;
-    // private boolean y1RightShowLine;
-    private boolean y2LeftShowLine;
-    // private boolean y2RightShowLine;
-    private boolean y3LeftShowLine;
-    private boolean y4LeftShowLine;
+    // Marker Line values
+    private List<Double> x1MarkerLines;
+    private List<Double>  y1MarkerLines;
+    //
+    //
+    private List<Double>  y2LeftMarkerLines;
+    //
+    private List<Double>  y3LeftMarkerLines;
+    private List<Double>  y4LeftMarkerLines;
     
     // Chart Type
     private ChartType y1Chart;
@@ -137,11 +140,11 @@ public class SmartChartSetting {
         y3LeftIncludeZero = false;
         y4LeftIncludeZero = false;
         
-        xShowLine = false;
-        y1ShowLine = false;
-        y2LeftShowLine = false;
-        y3LeftShowLine = false;
-        y4LeftShowLine = false;
+        x1MarkerLines = Collections.emptyList();
+        y1MarkerLines = Collections.emptyList();
+        y2LeftMarkerLines = Collections.emptyList();
+        y3LeftMarkerLines = Collections.emptyList();
+        y4LeftMarkerLines = Collections.emptyList();
         
         y1Chart = null;
         y1LeftChart = null;
@@ -492,46 +495,46 @@ public class SmartChartSetting {
         this.y4LeftIncludeZero = y4LeftIncludeZero;
     }
     
-    public boolean isxShowLine() {
-        return xShowLine;
+    public List<Double> getX1MarkerLines() {
+        return x1MarkerLines;
     }
 
-    public void setxShowLine(boolean xShowLine) {
-        this.xShowLine = xShowLine;
+    public void setX1MarkerLines(List<Double> x1MarkerLines) {
+        this.x1MarkerLines = x1MarkerLines;
     }
 
-    public boolean isY1ShowLine() {
-        return y1ShowLine;
+    public List<Double> getY1MarkerLines() {
+        return y1MarkerLines;
     }
 
-    public void setY1ShowLine(boolean y1ShowLine) {
-        this.y1ShowLine = y1ShowLine;
+    public void setY1MarkerLines(List<Double> y1MarkerLines) {
+        this.y1MarkerLines = y1MarkerLines;
     }
 
-    public boolean isY2LeftShowLine() {
-        return y2LeftShowLine;
+    public List<Double> getY2LeftMarkerLines() {
+        return y2LeftMarkerLines;
     }
 
-    public void setY2LeftShowLine(boolean y2LeftShowLine) {
-        this.y2LeftShowLine = y2LeftShowLine;
+    public void setY2LeftMarkerLines(List<Double> y2LeftMarkerLines) {
+        this.y2LeftMarkerLines = y2LeftMarkerLines;
     }
 
-    public boolean isY3LeftShowLine() {
-        return y3LeftShowLine;
+    public List<Double> getY3LeftMarkerLines() {
+        return y3LeftMarkerLines;
     }
 
-    public void setY3LeftShowLine(boolean y3LeftShowLine) {
-        this.y3LeftShowLine = y3LeftShowLine;
+    public void setY3LeftMarkerLines(List<Double> y3LeftMarkerLines) {
+        this.y3LeftMarkerLines = y3LeftMarkerLines;
     }
 
-    public boolean isY4LeftShowLine() {
-        return y4LeftShowLine;
+    public List<Double> getY4LeftMarkerLines() {
+        return y4LeftMarkerLines;
     }
 
-    public void setY4LeftShowLine(boolean y4LeftShowLine) {
-        this.y4LeftShowLine = y4LeftShowLine;
+    public void setY4LeftMarkerLines(List<Double> y4LeftMarkerLines) {
+        this.y4LeftMarkerLines = y4LeftMarkerLines;
     }
-
+    
     public ChartType getY1Chart() {
         return y1Chart;
     }
