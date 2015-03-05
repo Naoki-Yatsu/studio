@@ -12,6 +12,7 @@ import org.jfree.chart.ChartMouseListener;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartRenderingInfo;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.panel.CrosshairOverlay;
 import org.jfree.chart.plot.CategoryPlot;
@@ -49,23 +50,31 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
         // overlay
         CrosshairOverlay crosshairOverlay = new CombindAxisCrosshairOverlay();
         
-        // xCrosshair
-        xCrosshair = createCrosshair();
-        crosshairOverlay.addDomainCrosshair(xCrosshair);
-        
         // yCrosshair
         Plot plot = chart.getPlot();
+        ValueAxis xAxis = null;
         if (plot instanceof CombinedDomainXYPlot) {
+            xAxis = ((CombinedDomainXYPlot) plot).getDomainAxis();
             for (int i = 0; i < ((CombinedDomainXYPlot) plot).getSubplots().size(); i++) {
                 yCrosshairs.add(createCrosshair());
             }
         } else if (plot instanceof XYPlot) {
+            xAxis = ((XYPlot) plot).getDomainAxis();
             yCrosshairs.add(createCrosshair());
         } else if (plot instanceof CategoryPlot) {
         }
         for (Crosshair crosshair : yCrosshairs) {
             crosshairOverlay.addRangeCrosshair(crosshair);
         }
+        
+        // xCrosshair
+        if (xAxis instanceof DateAxis) {
+            xCrosshair = createTimeCrosshair((DateAxis)xAxis);
+        } else {
+            xCrosshair = createCrosshair();
+        }
+        crosshairOverlay.addDomainCrosshair(xCrosshair);
+        
         // add to chart
         addOverlay(crosshairOverlay);
         
@@ -80,6 +89,13 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
         return crosshair;
     }
 
+    private Crosshair createTimeCrosshair(DateAxis dateAxis) {
+        Crosshair crosshair = new TimeCrosshair(Double.NaN, Color.GRAY, new BasicStroke(0f), dateAxis);
+        crosshair.setLabelVisible(true);
+        crosshair.setLabelBackgroundPaint(Color.WHITE);
+        return crosshair;
+    }
+    
     @Override
     public void chartMouseClicked(ChartMouseEvent event) {
         // ignore
@@ -91,8 +107,7 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
         JFreeChart chart = event.getChart();
         XYPlot plot = (XYPlot) chart.getPlot();
         ValueAxis xAxis = plot.getDomainAxis();
-        double x = xAxis.java2DToValue(event.getTrigger().getX(), dataArea,
-                RectangleEdge.BOTTOM);
+        double x = xAxis.java2DToValue(event.getTrigger().getX(), dataArea, RectangleEdge.BOTTOM);
         // make the crosshairs disappear if the mouse is out of range
         if (!xAxis.getRange().contains(x)) {
             x = Double.NaN;

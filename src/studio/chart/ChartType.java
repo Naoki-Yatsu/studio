@@ -4,7 +4,7 @@ public enum ChartType {
     LINE,
     LINE_MARK,
     BAR,
-    HISTGRAM,
+    BAR_DENSITY,
     SCATTER,
     OHLC;
 }

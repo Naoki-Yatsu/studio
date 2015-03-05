@@ -28,6 +28,7 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.category.CategoryItemRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.LegendTitle;
 import org.jfree.data.category.CategoryDataset;
@@ -37,6 +38,7 @@ import org.jfree.data.time.Day;
 import org.jfree.data.time.Millisecond;
 import org.jfree.data.time.Minute;
 import org.jfree.data.time.Month;
+import org.jfree.data.time.RegularTimePeriod;
 import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
@@ -169,13 +171,16 @@ public class ChartDataCreator {
             TimeSeriesCollection dataset = (TimeSeriesCollection) xyDataset;
             switch (setting.getY1Chart()) {
                 case LINE:
+                    chart = ChartFactory.createTimeSeriesChart(setting.getTitle(), setting.getxLabel(), setting.getY1Label(), dataset);
+                    break;
                 case LINE_MARK:
                     chart = ChartFactory.createTimeSeriesChart(setting.getTitle(), setting.getxLabel(), setting.getY1Label(), dataset);
+                    ((XYLineAndShapeRenderer) chart.getXYPlot().getRenderer()).setBaseShapesVisible(true);
                     break;
                 case BAR:
                     chart = ChartFactory.createXYBarChart(setting.getTitle(), setting.getxLabel(), true, setting.getY1Label(), dataset);
                     break;
-                case HISTGRAM:
+                case BAR_DENSITY:
                     chart = ChartFactory.createXYBarChart(setting.getTitle(), setting.getxLabel(), true, setting.getY1Label(), dataset);
                     break;
                 case SCATTER:
@@ -188,13 +193,16 @@ public class ChartDataCreator {
             XYSeriesCollection dataset = (XYSeriesCollection) xyDataset;
             switch (setting.getY1Chart()) {
                 case LINE:
+                    chart = ChartFactory.createXYLineChart(setting.getTitle(), setting.getxLabel(), setting.getY1Label(), dataset);
+                    break;
                 case LINE_MARK:
                     chart = ChartFactory.createXYLineChart(setting.getTitle(), setting.getxLabel(), setting.getY1Label(), dataset);
+                    ((XYLineAndShapeRenderer) chart.getXYPlot().getRenderer()).setBaseShapesVisible(true);
                     break;
                 case BAR:
                     chart = ChartFactory.createXYBarChart(setting.getTitle(), setting.getxLabel(), false, setting.getY1Label(), dataset);
                     break;
-                case HISTGRAM:
+                case BAR_DENSITY:
                     chart = ChartFactory.createHistogram(setting.getTitle(), setting.getxLabel(), setting.getY1Label(), dataset, PlotOrientation.VERTICAL, true, true, false);
                     break;
                 case SCATTER:
@@ -511,12 +519,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < dates.getLength(); row++) {
                         K.KDate date = (K.KDate) dates.at(row);
                         Day day = new Day(date.toDate(), tz, locale);
-
-                        Object o = table.getValueAt(row, col);
-                        if (o instanceof K.KBase)
-                            if (!((K.KBase) o).isNull())
-                                if (o instanceof ToDouble)
-                                    series.addOrUpdate(day, ((ToDouble) o).toDouble());
+                        addData(series, day, table, row, col);
                     }
                 } else if (klass == K.KTimeVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -525,12 +528,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < table.getRowCount(); row++) {
                         K.KTime time = (K.KTime) times.at(row);
                         Millisecond ms = new Millisecond(time.toTime(), tz, locale);
-
-                        Object o = table.getValueAt(row, col);
-                        if (o instanceof K.KBase)
-                            if (!((K.KBase) o).isNull())
-                                if (o instanceof ToDouble)
-                                    series.addOrUpdate(ms, ((ToDouble) o).toDouble());
+                        addData(series, ms, table, row, col);
                     }
                 } else if (klass == K.KTimestampVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -539,12 +537,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < dates.getLength(); row++) {
                         K.KTimestamp date = (K.KTimestamp) dates.at(row);
                         Millisecond ms = new Millisecond(date.toTimestamp(), tz, locale);
-
-                        Object o = table.getValueAt(row, col);
-                        if (o instanceof K.KBase)
-                            if (!((K.KBase) o).isNull())
-                                if (o instanceof ToDouble)
-                                    series.addOrUpdate(ms, ((ToDouble) o).toDouble());
+                        addData(series, ms, table, row, col);
                     }
                 } else if (klass == K.KTimespanVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -553,12 +546,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < table.getRowCount(); row++) {
                         K.KTimespan time = (K.KTimespan) times.at(row);
                         Millisecond ms = new Millisecond(time.toTime(), tz, locale);
-
-                        Object o = table.getValueAt(row, col);
-                        if (o instanceof K.KBase)
-                            if (!((K.KBase) o).isNull())
-                                if (o instanceof ToDouble)
-                                    series.addOrUpdate(ms, ((ToDouble) o).toDouble());
+                        addData(series, ms, table, row, col);
                     }
                 } else if (klass == K.KDatetimeVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -567,12 +555,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < table.getRowCount(); row++) {
                         K.KDatetime time = (K.KDatetime) times.at(row);
                         Millisecond ms = new Millisecond(time.toTimestamp(), tz, locale);
-
-                        Object o = table.getValueAt(row, col);
-                        if (o instanceof K.KBase)
-                            if (!((K.KBase) o).isNull())
-                                if (o instanceof ToDouble)
-                                    series.addOrUpdate(ms, ((ToDouble) o).toDouble());
+                        addData(series, ms, table, row, col);
                     }
                 } else if (klass == K.KMonthVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -584,12 +567,7 @@ public class ChartDataCreator {
                         m = 1 + m % 12;
 
                         Month month = new Month(m, y);
-
-                        Object o = table.getValueAt(row, col);
-                        if (o instanceof K.KBase)
-                            if (!((K.KBase) o).isNull())
-                                if (o instanceof ToDouble)
-                                    series.addOrUpdate(month, ((ToDouble) o).toDouble());
+                        addData(series, month, table, row, col);
                     }
                 } else if (klass == K.KSecondVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -597,13 +575,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < table.getRowCount(); row++) {
                         K.Second time = (K.Second) times.at(row);
                         Second second = new Second(time.i % 60, time.i / 60, 0, 1, 1, 2001);
-
-                        Object o = table.getValueAt(row, col);
-                        if (o instanceof K.KBase)
-                            if (!((K.KBase) o).isNull())
-                                if (o instanceof ToDouble)
-                                    series.addOrUpdate(second, ((ToDouble) o).toDouble());
-
+                        addData(series, second, table, row, col);
                     }
                 } else if (klass == K.KMinuteVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -611,11 +583,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < table.getRowCount(); row++) {
                         K.Minute time = (K.Minute) times.at(row);
                         Minute minute = new Minute(time.i % 60, time.i / 60, 1, 1, 2001);
-                        Object o = table.getValueAt(row, col);
-                        if (o instanceof K.KBase)
-                            if (!((K.KBase) o).isNull())
-                                if (o instanceof ToDouble)
-                                    series.addOrUpdate(minute, ((ToDouble) o).toDouble());
+                        addData(series, minute, table, row, col);
                     }
                 }
             } catch (SeriesException e) {
@@ -629,6 +597,18 @@ public class ChartDataCreator {
         return tsc;
     }
 
+    private static void addData(TimeSeries series, RegularTimePeriod period, KTableModel table, int row, int col) {
+        Object o = table.getValueAt(row, col);
+        if (o instanceof K.KBase
+                && !((K.KBase) o).isNull()
+                && o instanceof ToDouble) {
+            double value = ((ToDouble) o).toDouble();
+            if (!Double.isInfinite(value)) {
+                series.addOrUpdate(period, ((ToDouble) o).toDouble());
+            }
+        }
+    }
+    
     private static XYSeriesCollection createXYSeriesCollection(KTableModel table, int fromCol, int toCol) {
         XYSeriesCollection xysc = new XYSeriesCollection();
 
@@ -641,7 +621,9 @@ public class ChartDataCreator {
                 for (int row = 0; row < table.getRowCount(); row++) {
                     double x = ((ToDouble) table.getValueAt(row, 0)).toDouble();
                     double y = ((ToDouble) table.getValueAt(row, col)).toDouble();
-                    series.add(x, y);
+                    if (!Double.isInfinite(x) && !Double.isInfinite(y)) {
+                        series.add(x, y);
+                    }
                 }
             } catch (SeriesException e) {
                 System.err.println("Error adding to series");

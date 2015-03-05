@@ -2,6 +2,7 @@ package studio.chart;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -129,13 +130,7 @@ public class SmartChartManager {
         }
         return instance;
     }
-    
-    public void showPanel() {
-        frame.setVisible(true);
-        frame.requestFocus();
-        frame.toFront();
-    }
-    
+
     private SmartChartManager(Studio studio) {
         this.studio = studio;
         
@@ -148,11 +143,17 @@ public class SmartChartManager {
         frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.PAGE_AXIS));
         frame.getContentPane().add(settingPanel);
         frame.pack();
-//        frame.setVisible(true);
-        frame.requestFocus();
-        frame.toFront();
+        // frame.setVisible(true);
+        // frame.requestFocus();
+        // frame.toFront();
     }
     
+    public void showPanel() {
+        frame.setVisible(true);
+        frame.requestFocus();
+        frame.toFront();
+        frame.setState(Frame.NORMAL);
+    }
     
     private JFrame creatChartFrame() {
         JFrame newFrame = new JFrame("Studio for kdb+ [smart chart]");
@@ -199,6 +200,7 @@ public class SmartChartManager {
             chartFrame.setVisible(true);
             chartFrame.requestFocus();
             chartFrame.toFront();
+            chartFrame.setState(Frame.NORMAL);
         } else {
             throw new RuntimeException("No chart was created.");
         }
@@ -879,9 +881,10 @@ public class SmartChartManager {
             this.itemName = itemName;
             
             // Component
+            chartCombo.setPreferredSize(new Dimension(100, 25));
             columnNameCombo.setPreferredSize(new Dimension(120, 25));
             
-            // int panel
+            // initialize panel
             this.add(labelField);
             this.add(minField);
             this.add(maxField);
