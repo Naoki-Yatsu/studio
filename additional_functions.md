@@ -40,6 +40,16 @@ New Functions
 Multi-axis Chart Function
 --------------
 
+This version is able to create multi-axis chart.  
+X-axis is only one.  
+Y-axis is 1-4 and can use left-right for 1st and 2nd Y-axis.
+
+
+![alt tag](https://raw.githubusercontent.com/CharlesSkelton/studio/master/meta/console.png)
+
+
+![alt tag](https://raw.githubusercontent.com/CharlesSkelton/studio/master/meta/multi-chart.png)
+
 
 
 
