@@ -22,6 +22,7 @@ Bug Fix
 -----------
 
 * timestamp chart
+* (Not Bug) add syntax highlight for new functions(sdev, svar, scov)
 
 New Functions
 --------------
@@ -45,16 +46,9 @@ X-axis is only one.
 Y-axis is 1-4 and can use left-right for 1st and 2nd Y-axis.
 
 
-![alt tag](https://raw.githubusercontent.com/CharlesSkelton/studio/master/meta/console.png)
+![alt tag](https://raw.githubusercontent.com/Naoki-Yatsu/studio/master/meta/console.png)
 
-
-![alt tag](https://raw.githubusercontent.com/CharlesSkelton/studio/master/meta/multi-chart.png)
-
-
-
-
-
-
+![alt tag](https://raw.githubusercontent.com/Naoki-Yatsu/studio/master/meta/multi-chart.png)
 
 
 

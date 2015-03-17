@@ -40,7 +40,7 @@ public class QCompletionQuery implements CompletionQuery
     private static final String[] RESERVED_KEYWORDS = new String[] {
             // plus datatypes : "boolean","guid","byte","short","int","long","real","float","char","symbol","timestamp","month","date","datetime","timespan","minute","second","time"
             //    "abs","acos","aj","aj0","all","and","any","asc","asin","asof","atan","attr","avg","avgs","bin","by","ceiling","cols","cor","cos","count","cov","cross","csv","cut","delete","deltas","desc","dev","differ","distinct","div","do","each","ej","enlist","eval","except","exec","exit","exp","fby","fills","first","fkeys","flip","floor","from","get","getenv","group","gtime","hclose","hcount","hdel","hopen","hsym","iasc","idesc","if","ij","in","insert","inter","inv","key","keys","last","like","list","lj","load","log","lower","lsq","ltime","ltrim","mavg","max","maxs","mcount","md5","mdev","med","meta","min","mins","mmax","mmin","mmu","mod","msum","neg","next","not","null","or","over","parse","peach","pj","plist","prd","prds","prev","prior","rand","rank","ratios","raze","read0","read1","reciprocal","reverse","rload","rotate","rsave","rtrim","save","scan","select","set","setenv","show","signum","sin","sqrt","ss","ssr","string","sublist","sum","sums","sv","system","tables","tan","til","trim","txf","type","uj","ungroup","union","update","upper","upsert","value","var","view","views","vs","wavg","where","while","within","wj","wj1","wsum","xasc","xbar","xcol","xcols","xdesc","xexp","xgroup","xkey","xlog","xprev","xrank"
-            "abs","acos","aj","aj0","all","and","any","asc","asin","asof","atan","attr","avg","avgs","bin","boolean","by","byte","ceiling","char","cols","cor","cos","count","cov","cross","csv","cut","date","datetime","delete","deltas","desc","dev","differ","distinct","div","do","each","ej","enlist","eval","except","exec","exit","exp","fby","fills","first","fkeys","flip","float","floor","from","get","getenv","group","gtime","guid","hclose","hcount","hdel","hopen","hsym","iasc","idesc","if","ij","in","insert","int","inter","inv","key","keys","last","like","list","lj","load","log","long","lower","lsq","ltime","ltrim","mavg","max","maxs","mcount","md5","mdev","med","meta","min","mins","minute","mmax","mmin","mmu","mod","month","msum","neg","next","not","null","or","over","parse","peach","pj","plist","prd","prds","prev","prior","rand","rank","ratios","raze","read0","read1","real","reciprocal","reverse","rload","rotate","rsave","rtrim","save","scan","second","select","set","setenv","short","show","signum","sin","sqrt","ss","ssr","string","sublist","sum","sums","sv","symbol","system","tables","tan","til","time","timespan","timestamp","trim","txf","type","uj","ungroup","union","update","upper","upsert","value","var","view","views","vs","wavg","where","while","within","wj","wj1","wsum","xasc","xbar","xcol","xcols","xdesc","xexp","xgroup","xkey","xlog","xprev","xrank"
+            "abs","acos","aj","aj0","all","and","any","asc","asin","asof","atan","attr","avg","avgs","bin","boolean","by","byte","ceiling","char","cols","cor","cos","count","cov","cross","csv","cut","date","datetime","delete","deltas","desc","dev","differ","distinct","div","do","each","ej","enlist","eval","except","exec","exit","exp","fby","fills","first","fkeys","flip","float","floor","from","get","getenv","group","gtime","guid","hclose","hcount","hdel","hopen","hsym","iasc","idesc","if","ij","in","insert","int","inter","inv","key","keys","last","like","list","lj","load","log","long","lower","lsq","ltime","ltrim","mavg","max","maxs","mcount","md5","mdev","med","meta","min","mins","minute","mmax","mmin","mmu","mod","month","msum","neg","next","not","null","or","over","parse","peach","pj","plist","prd","prds","prev","prior","rand","rank","ratios","raze","read0","read1","real","reciprocal","reverse","rload","rotate","rsave","rtrim","save","scan","scov","sdev","second","select","set","setenv","short","show","signum","sin","sqrt","ss","ssr","string","sublist","sum","sums","sv","svar","symbol","system","tables","tan","til","time","timespan","timestamp","trim","txf","type","uj","ungroup","union","update","upper","upsert","value","var","view","views","vs","wavg","where","while","within","wj","wj1","wsum","xasc","xbar","xcol","xcols","xdesc","xexp","xgroup","xkey","xlog","xprev","xrank"
         };
 
     private static final Set<String> variableSet = new HashSet<>(100);
@@ -97,7 +97,7 @@ public class QCompletionQuery implements CompletionQuery
 
                     // if there is "where" in front of cursor, use the word before where as tablename.
                     if (foreThisLine.contains(" where ")) {
-                        String[] strArray = foreThisLine.split(" +");
+                        String[] strArray = foreThisLine.split("[ %$!&()=~#;:><?,'\"/\n]");
                         for (int i = 0; i < strArray.length; i++) {
                             if (strArray[i].equals("where") && i > 0) {
                                 tablename = strArray[i - 1];
@@ -109,7 +109,7 @@ public class QCompletionQuery implements CompletionQuery
                     // edit latter of cursor
                     // If there is "from" after cursor, use the word after "from" as tablaname.
                     if (latterThisLine.contains("from ")) {
-                        String[] strArray = latterThisLine.split(" +");
+                        String[] strArray = latterThisLine.split("[ %$!&()=~#;:><?,'\"/\n]");
                         for (int i = 0; i < strArray.length; i++) {
                             if (strArray[i].equals("from") && i + 1 < strArray.length) {
                                 tablename = strArray[i + 1];
@@ -117,7 +117,7 @@ public class QCompletionQuery implements CompletionQuery
                             }
                         }
                     }
-
+                    
                     // delete "`" in the top of prefix
                     if (prefix.startsWith("`")) {
                         prefix = prefix.substring(1);
