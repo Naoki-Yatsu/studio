@@ -1,5 +1,8 @@
 package studio.chart;
 
+import java.awt.Color;
+
+import org.jfree.chart.labels.HighLowItemLabelGenerator;
 import org.jfree.chart.labels.ItemLabelAnchor;
 import org.jfree.chart.labels.ItemLabelPosition;
 import org.jfree.chart.labels.StandardCategoryToolTipGenerator;
@@ -7,6 +10,8 @@ import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.labels.XYToolTipGenerator;
 import org.jfree.chart.renderer.category.CategoryItemRenderer;
 import org.jfree.chart.renderer.category.LineAndShapeRenderer;
+import org.jfree.chart.renderer.xy.CandlestickRenderer;
+import org.jfree.chart.renderer.xy.HighLowRenderer;
 import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
@@ -31,6 +36,20 @@ public class RendererFactory {
                 return createBarChartRenderer(isDateDomainAxis, tooltips, urls);
             case SCATTER:
                 return createScatterChartRenderer(tooltips, urls);
+            case OHLC:
+                CandlestickRenderer candlestickRenderer = new CandlestickRenderer();
+                candlestickRenderer.setAutoWidthGap(5.0);
+                candlestickRenderer.setUseOutlinePaint(true);
+                candlestickRenderer.setSeriesOutlinePaint(0, Color.DARK_GRAY);
+                //// Fallowing settings also works.
+                // candlestickRenderer.setSeriesPaint(0, Color.BLACK);
+                // candlestickRenderer.setAutoPopulateSeriesPaint(false);
+                // candlestickRenderer.setAutoPopulateSeriesStroke(false);
+                return candlestickRenderer;
+            case HIGH_LOW:
+                HighLowRenderer renderer = new HighLowRenderer();
+                renderer.setBaseToolTipGenerator(new HighLowItemLabelGenerator());
+                return renderer;
             default:
                 return null;
         }

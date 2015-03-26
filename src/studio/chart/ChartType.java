@@ -6,5 +6,6 @@ public enum ChartType {
     BAR,
     BAR_DENSITY,
     SCATTER,
-    OHLC;
+    OHLC,
+    HIGH_LOW;
 }

@@ -41,10 +41,12 @@ New Functions
 Multi-axis Chart Function
 --------------
 
-This version is able to create multi-axis chart.  
-X-axis is only one.  
-Y-axis is 1-4 and can use left-right for 1st and 2nd Y-axis.
+This version is able to create multi-axis chart. 
 
+* X-axis is only one, Y-axes are 1-5 and right axis is enabled.
+* Bar, Scatter and OHLC can be used.
+* Show corss-hair for first item for each Y-axis.
+* Show horizontal and vertical line for X-Y axis.
 
 ![alt tag](https://raw.githubusercontent.com/Naoki-Yatsu/studio/master/meta/console.png)
 

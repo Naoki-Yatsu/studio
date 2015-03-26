@@ -11,6 +11,7 @@ public class TimeCrosshair extends Crosshair {
 
     private static final long serialVersionUID = 1L;
 
+    @SuppressWarnings("unused")
     private DateAxis dateAxis;
     
     public TimeCrosshair(DateAxis dateAxis) {

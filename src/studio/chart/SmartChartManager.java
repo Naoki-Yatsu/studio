@@ -14,7 +14,10 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -41,6 +44,7 @@ import org.jfree.chart.plot.Plot;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 
+import studio.chart.ChartSetting.ChartAxisSetting;
 import studio.kdb.Config;
 import studio.kdb.KTableModel;
 import studio.ui.Studio;
@@ -53,7 +57,8 @@ public class SmartChartManager {
     // //////////////////////////////////////
 
     private static final int PANEL_WIDTH = 730;
-    private static final int PANEL_HEIGHT = 560;
+    private static final int PANEL_HEIGHT_BASE = 240;
+    private static final int PANEL_HEIGHT_PER_ITEM = 50;
     
     private static final int TEXT_FIELD_COLUMNS_NORMAL = 6;
     private static final int TEXT_FIELD_COLUMNS_LONG = 8;
@@ -74,7 +79,7 @@ public class SmartChartManager {
     
     private Studio studio;
     
-    private SmartChartSetting setting = new SmartChartSetting();
+    private ChartSetting setting = new ChartSetting();
 
     //
     // Component Items
@@ -82,9 +87,10 @@ public class SmartChartManager {
     
     // Panel
     private JPanel windowPanel = new JPanel();
-    private JPanel yOpenClosePanel = new JPanel();
     private JPanel chartButtonPanel = new JPanel();
-    private JPanel columnNameButtonPanel = new JPanel();
+    private JPanel yOpenCloseWrapperPanel = new JPanel();    
+    private JPanel yOpenClosePanel = new JPanel();
+    private JPanel multiAxisPanel = new JPanel();
     private JPanel clearButtonPanel = new JPanel();
     
     // Button
@@ -92,14 +98,16 @@ public class SmartChartManager {
     private JButton updateButton = new JButton("Update Chart");
     private JButton clearButton = new JButton("Clear Settings");
     private JButton columnNameButton = new JButton("Update Separator");
+    private JTextField gapField = new GuideTextField("Multi-Gap(-5.0)", TEXT_FIELD_COLUMNS_LONG);
+    private JCheckBox separateLegendCheckBox = new JCheckBox("S.Leg.", ChartSetting.SEPARETE_LEGEND_DEFAULT);
     
     // Window
     private JTextField titleField = new GuideTextField("Title", TEXT_FIELD_COLUMNS_LONG);
-    private JTextField xSizeField = new GuideTextField("X size", String.valueOf(SmartChartSetting.WINDOW_X_DEFAULT), TEXT_FIELD_COLUMNS_NORMAL);
-    private JTextField ySizeField = new GuideTextField("Y size", String.valueOf(SmartChartSetting.WINDOW_Y_DEFAULT), TEXT_FIELD_COLUMNS_NORMAL);
+    private JTextField xSizeField = new GuideTextField("X size", String.valueOf(ChartSetting.WINDOW_X_DEFAULT), TEXT_FIELD_COLUMNS_NORMAL);
+    private JTextField ySizeField = new GuideTextField("Y size", String.valueOf(ChartSetting.WINDOW_Y_DEFAULT), TEXT_FIELD_COLUMNS_NORMAL);
     private JComboBox<ChartTheme> themeCombo = new JComboBox<>(ChartTheme.values());
-    private JCheckBox newChartFrameCheckBox = new JCheckBox("New Frame", true);
-    private JCheckBox crosshairOverlayCheckBox = new JCheckBox("Cross-hair", false);
+    private JCheckBox newChartFrameCheckBox = new JCheckBox("New Frame", ChartSetting.NEW_FRAME_DEFAULT);
+    private JCheckBox crosshairOverlayCheckBox = new JCheckBox("Cross-hair", ChartSetting.CROSS_HAIR_DEFAULT);
     
     // Open/Close label
     private JLabel y1Left2Label = new JLabel(" + Y1 Left2");
@@ -107,17 +115,26 @@ public class SmartChartManager {
     private JLabel y2LeftLabel = new JLabel(" + Y2 Left");
     private JLabel y2RithtLabel = new JLabel(" + Y2 Right");
     private JLabel y3LeftLabel = new JLabel(" + Y3 Left");
+    private JLabel y3RithtLabel = new JLabel(" + Y3 Right");
     private JLabel y4LeftLabel = new JLabel(" + Y4 Left");
+    private JLabel y4RithtLabel = new JLabel(" + Y4 Right");
+    private JLabel y5LeftLabel = new JLabel(" + Y5 Left");
+    private JLabel y5RithtLabel = new JLabel(" + Y5 Right");
     
     // Additional Axis Panel
-    private AddtionalAxisPanel xPanel = new AddtionalAxisPanel("X");
-    private AddtionalAxisPanel y1Panel = new AddtionalAxisPanel("Y1");
-    private AddtionalAxisPanel y1LeftPanel = new AddtionalAxisPanel("Y1 Left2");
-    private AddtionalAxisPanel y1RightPanel = new AddtionalAxisPanel("Y1 Right");
-    private AddtionalAxisPanel y2LeftPanel = new AddtionalAxisPanel("Y2 Left");
-    private AddtionalAxisPanel y2RightPanel = new AddtionalAxisPanel("Y2 Right");
-    private AddtionalAxisPanel y3LeftPanel = new AddtionalAxisPanel("Y3 Left");
-    private AddtionalAxisPanel y4LeftPanel = new AddtionalAxisPanel("Y4 Left");
+    private Map<AxisPosition, AddtionalAxisPanel> axisPanelMap = new EnumMap<>(AxisPosition.class);
+    private AddtionalAxisPanel xPanel = new AddtionalAxisPanel("X", AxisPosition.X1);
+    private AddtionalAxisPanel y1Panel = new AddtionalAxisPanel("Y1", AxisPosition.Y1);
+    private AddtionalAxisPanel y1LeftPanel = new AddtionalAxisPanel("Y1 Left2", AxisPosition.Y1_LEFT2);
+    private AddtionalAxisPanel y1RightPanel = new AddtionalAxisPanel("Y1 Right", AxisPosition.Y1_RIGHT);
+    private AddtionalAxisPanel y2LeftPanel = new AddtionalAxisPanel("Y2 Left", AxisPosition.Y2_LEFT);
+    private AddtionalAxisPanel y2RightPanel = new AddtionalAxisPanel("Y2 Right", AxisPosition.Y2_RIGHT);
+    private AddtionalAxisPanel y3LeftPanel = new AddtionalAxisPanel("Y3 Left", AxisPosition.Y3_LEFT);
+    private AddtionalAxisPanel y3RightPanel = new AddtionalAxisPanel("Y3 Right", AxisPosition.Y3_RIGHT);
+    private AddtionalAxisPanel y4LeftPanel = new AddtionalAxisPanel("Y4 Left", AxisPosition.Y4_LEFT);
+    private AddtionalAxisPanel y4RightPanel = new AddtionalAxisPanel("Y4 Right", AxisPosition.Y4_RIGHT);
+    private AddtionalAxisPanel y5LeftPanel = new AddtionalAxisPanel("Y5 Left", AxisPosition.Y5_LEFT);
+    private AddtionalAxisPanel y5RightPanel = new AddtionalAxisPanel("Y5 Right", AxisPosition.Y5_RIGHT);
 
     
     // //////////////////////////////////////
@@ -170,13 +187,13 @@ public class SmartChartManager {
      * show chart using settings
      */
     private void showChart() {
-            copySettings();
-            KTableModel table = studio.getKTableModel();
-            if (table != null) {
-                createChart(table, newChartFrameCheckBox.isSelected());
-            } else {
-                
-            }
+        copySettings();
+        KTableModel table = studio.getKTableModel();
+        if (table != null) {
+            createChart(table, newChartFrameCheckBox.isSelected());
+        } else {
+
+        }
     }
 
     public void createChart(KTableModel table, boolean newFrame) {
@@ -221,17 +238,13 @@ public class SmartChartManager {
         }
         chartPanel.setPreferredSize(new Dimension(setting.getxSize(), setting.getySize()));
 
-        // Label, Range
-        if (!StringUtils.isBlank(setting.getxLabel())) {
-            chart.getXYPlot().getDomainAxis().setLabel(setting.getxLabel());
-        }
-        Plot plot = chart.getPlot();
-
         // Domain Label, range
+        Plot plot = chart.getPlot();
+        ChartAxisSetting x1Setting = setting.getAxisSetting(AxisPosition.X1);
         if (plot instanceof XYPlot) {
-            setupRangeAxis(chart.getXYPlot().getDomainAxis(), setting.getxLabel(), setting.getxMin(), setting.getxMax(), setting.isxIncludeZero());
+            setupRangeAxis(chart.getXYPlot().getDomainAxis(), x1Setting.getLabel(), x1Setting.getRangeMin(), x1Setting.getRangeMax(), x1Setting.isIncludeZero());
         } else if (plot instanceof CategoryPlot) {
-            chart.getCategoryPlot().getDomainAxis().setLabel(setting.getxLabel());
+            chart.getCategoryPlot().getDomainAxis().setLabel(x1Setting.getLabel());
         }
         
         // Plot and Range
@@ -240,27 +253,50 @@ public class SmartChartManager {
             @SuppressWarnings("unchecked")
             List<XYPlot> plots = ((CombinedDomainXYPlot) plot).getSubplots();
             switch (plots.size()) {
+                case 5:
+                    XYPlot plot5 = plots.get(4);
+                    ChartAxisSetting ySetting = setting.getAxisSetting(AxisPosition.Y5_LEFT);
+                    setupRangeAxis(plot5.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.isIncludeZero());
+                    setupPlot(plot5, x1Setting.getMarkerLines(), ySetting.getMarkerLines());
+                    if (plot5.getRangeAxisCount() == 2) {
+                        ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y5_RIGHT);
+                        setupRangeAxis(plot5.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), rightSetting.isIncludeZero());
+                    }
                 case 4:
                     XYPlot plot4 = plots.get(3);
-                    setupRangeAxis(plot4.getRangeAxis(), setting.getY4LeftLabel(), setting.getY4LeftMin(), setting.getY4LeftMax(), setting.isY4LeftIncludeZero());
-                    setupPlot(plot4, setting.getX1MarkerLines(), setting.getY4LeftMarkerLines());
+                    ySetting = setting.getAxisSetting(AxisPosition.Y4_LEFT);
+                    setupRangeAxis(plot4.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.isIncludeZero());
+                    setupPlot(plot4, x1Setting.getMarkerLines(), ySetting.getMarkerLines());
+                    if (plot4.getRangeAxisCount() == 2) {
+                        ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y4_RIGHT);
+                        setupRangeAxis(plot4.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), rightSetting.isIncludeZero());
+                    }
                 case 3:
                     XYPlot plot3 = plots.get(2);
-                    setupRangeAxis(plot3.getRangeAxis(), setting.getY3LeftLabel(), setting.getY3LeftMin(), setting.getY3LeftMax(), setting.isY3LeftIncludeZero());
-                    setupPlot(plot3, setting.getX1MarkerLines(), setting.getY3LeftMarkerLines());
+                    ySetting = setting.getAxisSetting(AxisPosition.Y3_LEFT);
+                    setupRangeAxis(plot3.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.isIncludeZero());
+                    setupPlot(plot3, x1Setting.getMarkerLines(), ySetting.getMarkerLines());
+                    if (plot3.getRangeAxisCount() == 2) {
+                        ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y3_RIGHT);
+                        setupRangeAxis(plot3.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), rightSetting.isIncludeZero());
+                    }
                 case 2:
                     XYPlot plot2 = plots.get(1);
-                    setupRangeAxis(plot2.getRangeAxis(), setting.getY2LeftLabel(), setting.getY2LeftMin(), setting.getY2LeftMax(), setting.isY2LeftIncludeZero());
-                    setupPlot(plot2, setting.getX1MarkerLines(), setting.getY2LeftMarkerLines());
+                    ySetting = setting.getAxisSetting(AxisPosition.Y2_LEFT);
+                    setupRangeAxis(plot2.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.isIncludeZero());
+                    setupPlot(plot2, x1Setting.getMarkerLines(), ySetting.getMarkerLines());
                     if (plot2.getRangeAxisCount() == 2) {
-                        setupRangeAxis(plot2.getRangeAxis(1), setting.getY2RightLabel(), setting.getY2RightMin(), setting.getY2RightMax(), setting.isY2RightIncludeZero());
+                        ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y2_RIGHT);
+                        setupRangeAxis(plot2.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), rightSetting.isIncludeZero());
                     }
                 default:
                     XYPlot plot1 = plots.get(0);
-                    setupRangeAxis(plot1.getRangeAxis(), setting.getY1Label(), setting.getY1Min(), setting.getY1Max(), setting.isY1IncludeZero());
-                    setupPlot(plot1, setting.getX1MarkerLines(), setting.getY1MarkerLines());
+                    ySetting = setting.getAxisSetting(AxisPosition.Y1);
+                    setupRangeAxis(plot1.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.isIncludeZero());
+                    setupPlot(plot1, x1Setting.getMarkerLines(), ySetting.getMarkerLines());
                     if (plot1.getRangeAxisCount() == 2) {
-                        setupRangeAxis(plot1.getRangeAxis(1), setting.getY1RightLabel(), setting.getY1RightMin(), setting.getY1RightMax(), setting.isY1RightIncludeZero());
+                        ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y1_RIGHT);
+                        setupRangeAxis(plot1.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), rightSetting.isIncludeZero());
                     }
                     break;
             }
@@ -268,10 +304,12 @@ public class SmartChartManager {
         } else if (plot instanceof XYPlot) {
             // one plot
             XYPlot xyPlot = (XYPlot) plot;
-            setupRangeAxis(xyPlot.getRangeAxis(), setting.getY1Label(), setting.getY1Min(), setting.getY1Max(), setting.isY1IncludeZero());
-            setupPlot(xyPlot, setting.getX1MarkerLines(), setting.getY1MarkerLines());
+            ChartAxisSetting ySetting = setting.getAxisSetting(AxisPosition.Y1);
+            setupRangeAxis(xyPlot.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.isIncludeZero());
+            setupPlot(xyPlot, x1Setting.getMarkerLines(), ySetting.getMarkerLines());
             if (xyPlot.getRangeAxisCount() == 2) {
-                setupRangeAxis(xyPlot.getRangeAxis(1), setting.getY1RightLabel(), setting.getY1RightMin(), setting.getY1RightMax(), setting.isY1RightIncludeZero());
+                ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y1_RIGHT);
+                setupRangeAxis(xyPlot.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), rightSetting.isIncludeZero());
             }
 
         } else if (plot instanceof CategoryPlot) {
@@ -334,77 +372,31 @@ public class SmartChartManager {
         }
     }
     
+    /**
+     * Copy all settings to ChartSetting instance
+     */
     private void copySettings() {
         // Window
         setting.setTitle(titleField.getText());
         setting.setxSize(evalWidnowSize(xSizeField.getText(), true));
         setting.setySize(evalWidnowSize(ySizeField.getText(), false));
         setting.setTheme((ChartTheme) themeCombo.getSelectedItem());
+        setting.setCombinedGap(evalDoubleField(gapField, ChartSetting.GAP_DEFAULT));
+        setting.setSeparateLegend(separateLegendCheckBox.isSelected());
         
-        // Label
-        setting.setxLabel(xPanel.labelField.getText());
-        setting.setY1Label(y1Panel.labelField.getText());
-        //
-        setting.setY1RightLabel(y1RightPanel.labelField.getText());
-        setting.setY2LeftLabel(y2LeftPanel.labelField.getText());
-        setting.setY2RightLabel(y2RightPanel.labelField.getText());
-        setting.setY3LeftLabel(y3LeftPanel.labelField.getText());
-        setting.setY4LeftLabel(y4LeftPanel.labelField.getText());
-
-        // Range
-        setting.setxMin(evalDoubleField(xPanel.minField));
-        setting.setxMax(evalDoubleField(xPanel.maxField));
-        setting.setY1Min(evalDoubleField(y1Panel.minField));
-        setting.setY1Max(evalDoubleField(y1Panel.maxField));
-        setting.setY1RightMin(evalDoubleField(y1RightPanel.minField));
-        setting.setY1RightMax(evalDoubleField(y1RightPanel.maxField));
-        setting.setY2LeftMin(evalDoubleField(y2LeftPanel.minField));
-        setting.setY2LeftMax(evalDoubleField(y2LeftPanel.maxField));
-        setting.setY2RightMin(evalDoubleField(y2RightPanel.minField));
-        setting.setY2RightMax(evalDoubleField(y2RightPanel.maxField));
-        setting.setY3LeftMin(evalDoubleField(y3LeftPanel.minField));
-        setting.setY3LeftMax(evalDoubleField(y3LeftPanel.maxField));
-        setting.setY4LeftMin(evalDoubleField(y4LeftPanel.minField));
-        setting.setY4LeftMax(evalDoubleField(y4LeftPanel.maxField));
-
-        // Include zero
-        setting.setxIncludeZero(xPanel.includeZeroCheckbox.isSelected());
-        setting.setY1IncludeZero(y1Panel.includeZeroCheckbox.isSelected());
-        setting.setY1RightIncludeZero(y1RightPanel.includeZeroCheckbox.isSelected());
-        setting.setY2LeftIncludeZero(y2LeftPanel.includeZeroCheckbox.isSelected());
-        setting.setY2RightIncludeZero(y2RightPanel.includeZeroCheckbox.isSelected());
-        setting.setY3LeftIncludeZero(y3LeftPanel.includeZeroCheckbox.isSelected());
-        setting.setY4LeftIncludeZero(y4LeftPanel.includeZeroCheckbox.isSelected());
-        
-        // Marker lines
-        setting.setX1MarkerLines(evalMarkerLine(xPanel.markerLineField.getText()));
-        setting.setY1MarkerLines(evalMarkerLine(y1Panel.markerLineField.getText()));
-        setting.setY2LeftMarkerLines(evalMarkerLine(y2LeftPanel.markerLineField.getText()));
-        setting.setY3LeftMarkerLines(evalMarkerLine(y3LeftPanel.markerLineField.getText()));
-        setting.setY4LeftMarkerLines(evalMarkerLine(y4LeftPanel.markerLineField.getText()));
-        
-        // Chart Type
-        setting.setY1Chart((ChartType) y1Panel.chartCombo.getSelectedItem());
-        setting.setY1LeftChart((ChartType) y1LeftPanel.chartCombo.getSelectedItem());
-        setting.setY1RightChart((ChartType) y1RightPanel.chartCombo.getSelectedItem());
-        setting.setY2LeftChart((ChartType) y2LeftPanel.chartCombo.getSelectedItem());
-        setting.setY2RightChart((ChartType) y2RightPanel.chartCombo.getSelectedItem());
-        setting.setY3LeftChart((ChartType) y3LeftPanel.chartCombo.getSelectedItem());
-        setting.setY4LeftChart((ChartType) y4LeftPanel.chartCombo.getSelectedItem());
-        
-        // Colname
-        setting.setY1LeftColumnName(getColumnNameValue(y1LeftPanel.columnNameCombo));
-        setting.setY1RightColumnName(getColumnNameValue(y1RightPanel.columnNameCombo));
-        setting.setY2LeftColumnName(getColumnNameValue(y2LeftPanel.columnNameCombo));
-        setting.setY2RightColumnName(getColumnNameValue(y2RightPanel.columnNameCombo));
-        setting.setY3LeftColumnName(getColumnNameValue(y3LeftPanel.columnNameCombo));
-        setting.setY4LeftColumnName(getColumnNameValue(y4LeftPanel.columnNameCombo));
-        
-        // Weight
-        setting.setY1Weight(evalWeihgt(y1Panel.weightField.getText()));
-        setting.setY2LeftWeight(evalWeihgt(y2LeftPanel.weightField.getText()));
-        setting.setY3LeftWeight(evalWeihgt(y3LeftPanel.weightField.getText()));
-        setting.setY4LeftWeight(evalWeihgt(y4LeftPanel.weightField.getText()));
+        // Axis Items
+        // It contains NOT used items
+        for (Entry<AxisPosition, AddtionalAxisPanel> entry : axisPanelMap.entrySet()) {
+            ChartAxisSetting axisSetting = setting.getAxisSetting(entry.getKey());
+            axisSetting.setLabel(entry.getValue().labelField.getText());
+            axisSetting.setRangeMin(evalDoubleField(entry.getValue().minField));
+            axisSetting.setRangeMax(evalDoubleField(entry.getValue().maxField));
+            axisSetting.setIncludeZero(entry.getValue().includeZeroCheckbox.isSelected());
+            axisSetting.setMarkerLines(evalMarkerLine(entry.getValue().markerLineField.getText()));
+            axisSetting.setChartType((ChartType) entry.getValue().chartCombo.getSelectedItem());
+            axisSetting.setColumnName(getColumnNameValue(entry.getValue().columnNameCombo));
+            axisSetting.setWeight(evalWeihgt(entry.getValue().weightField.getText()));
+        }
     }
     
     private double evalDoubleField(JTextField field) {
@@ -412,6 +404,14 @@ public class SmartChartManager {
             return Double.parseDouble(field.getText());
         } else {
             return Double.NaN;
+        }
+    }
+    
+    private double evalDoubleField(JTextField field, double defaultValue) {
+        if (NumberUtils.isNumber(field.getText())) {
+            return Double.parseDouble(field.getText());
+        } else {
+            return defaultValue;
         }
     }
     
@@ -425,9 +425,9 @@ public class SmartChartManager {
         // blank
         if (StringUtils.isBlank(windowSizeStr)) {
             if (isSizeX) {
-                return SmartChartSetting.WINDOW_X_DEFAULT;
+                return ChartSetting.WINDOW_X_DEFAULT;
             } else {
-                return SmartChartSetting.WINDOW_Y_DEFAULT;
+                return ChartSetting.WINDOW_Y_DEFAULT;
             }
         }
         // invalid size
@@ -493,11 +493,15 @@ public class SmartChartManager {
     private void clearSetting() {
         // window
         ((GuideTextField) titleField).clearText("");
-        ((GuideTextField) xSizeField).clearText(String.valueOf(SmartChartSetting.WINDOW_X_DEFAULT));
-        ((GuideTextField) ySizeField).clearText(String.valueOf(SmartChartSetting.WINDOW_Y_DEFAULT));
-        newChartFrameCheckBox.setSelected(true);
-        crosshairOverlayCheckBox.setSelected(false);
+        ((GuideTextField) xSizeField).clearText(String.valueOf(ChartSetting.WINDOW_X_DEFAULT));
+        ((GuideTextField) ySizeField).clearText(String.valueOf(ChartSetting.WINDOW_Y_DEFAULT));
+        newChartFrameCheckBox.setSelected(ChartSetting.NEW_FRAME_DEFAULT);
+        crosshairOverlayCheckBox.setSelected(ChartSetting.CROSS_HAIR_DEFAULT);
         themeCombo.setSelectedIndex(0);
+        
+        // Multi
+        ((GuideTextField) gapField).clearText("");
+        separateLegendCheckBox.setSelected(ChartSetting.SEPARETE_LEGEND_DEFAULT);
         
         // Additional panels
         xPanel.clearSetting();
@@ -507,7 +511,11 @@ public class SmartChartManager {
         y2LeftPanel.clearSetting();
         y2RightPanel.clearSetting();
         y3LeftPanel.clearSetting();
+        y3RightPanel.clearSetting();
         y4LeftPanel.clearSetting();
+        y4RightPanel.clearSetting();
+        y5LeftPanel.clearSetting();
+        y5RightPanel.clearSetting();
         
         copySettings();
     }
@@ -532,7 +540,11 @@ public class SmartChartManager {
         y2LeftPanel.columnNameCombo.removeAllItems();
         y2RightPanel.columnNameCombo.removeAllItems();
         y3LeftPanel.columnNameCombo.removeAllItems();
+        y3RightPanel.columnNameCombo.removeAllItems();
         y4LeftPanel.columnNameCombo.removeAllItems();
+        y4RightPanel.columnNameCombo.removeAllItems();
+        y5LeftPanel.columnNameCombo.removeAllItems();
+        y5RightPanel.columnNameCombo.removeAllItems();
         
         for (String columnName : columnNameList) {
             y1LeftPanel.columnNameCombo.addItem(columnName);
@@ -540,7 +552,11 @@ public class SmartChartManager {
             y2LeftPanel.columnNameCombo.addItem(columnName);
             y2RightPanel.columnNameCombo.addItem(columnName);
             y3LeftPanel.columnNameCombo.addItem(columnName);
+            y3RightPanel.columnNameCombo.addItem(columnName);
             y4LeftPanel.columnNameCombo.addItem(columnName);
+            y4RightPanel.columnNameCombo.addItem(columnName);
+            y5LeftPanel.columnNameCombo.addItem(columnName);
+            y5RightPanel.columnNameCombo.addItem(columnName);
         }
     }
     
@@ -607,24 +623,33 @@ public class SmartChartManager {
 
         // Panels
         settingPanel.add(chartButtonPanel);
-        settingPanel.add(columnNameButtonPanel);
+
         settingPanel.add(clearButtonPanel);
         settingPanel.add(windowPanel);
         settingPanel.add(xPanel);
         settingPanel.add(y1Panel);
-        settingPanel.add(yOpenClosePanel);
+        settingPanel.add(yOpenCloseWrapperPanel);
+        // settingPanel.add(yOpenClosePanel);
+        // settingPanel.add(columnNameButtonPanel);
         settingPanel.add(y1LeftPanel);
         settingPanel.add(y1RightPanel);
         settingPanel.add(y2LeftPanel);
         settingPanel.add(y2RightPanel);
         settingPanel.add(y3LeftPanel);
+        settingPanel.add(y3RightPanel);
         settingPanel.add(y4LeftPanel);
+        settingPanel.add(y4RightPanel);
+        settingPanel.add(y5LeftPanel);
+        settingPanel.add(y5RightPanel);
 
         // Button
         chartButtonPanel.add(chartButton);
         chartButtonPanel.add(updateButton);
-        columnNameButtonPanel.add(columnNameButton);
         clearButtonPanel.add(clearButton);
+        
+        multiAxisPanel.add(columnNameButton);
+        multiAxisPanel.add(gapField);    
+        multiAxisPanel.add(separateLegendCheckBox);    
         
         // window
         windowPanel.add(titleField);
@@ -635,19 +660,25 @@ public class SmartChartManager {
         windowPanel.add(themeCombo);
         
         // Y Open/Close
+        yOpenCloseWrapperPanel.add(yOpenClosePanel);
+        yOpenCloseWrapperPanel.add(multiAxisPanel);
         yOpenClosePanel.add(y1Left2Label);
         yOpenClosePanel.add(y1RightLabel);
         yOpenClosePanel.add(y2LeftLabel);
         yOpenClosePanel.add(y2RithtLabel);
         yOpenClosePanel.add(y3LeftLabel);
+        yOpenClosePanel.add(y3RithtLabel);
         yOpenClosePanel.add(y4LeftLabel);
+        yOpenClosePanel.add(y4RithtLabel);
+        yOpenClosePanel.add(y5LeftLabel);
+        yOpenClosePanel.add(y5RithtLabel);
         
         //
         // Set layout
         //
         
         // setting panel
-        settingPanel.setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT));
+        settingPanel.setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT_BASE + countVisiblePanel() * PANEL_HEIGHT_PER_ITEM));
         GridBagLayout layout = new GridBagLayout();
         settingPanel.setLayout(layout);
 
@@ -667,18 +698,12 @@ public class SmartChartManager {
         gbc.gridx = 0;
         gbc.gridy++;
         layout.setConstraints(xPanel, gbc);
-        
         gbc.gridy++;
         layout.setConstraints(y1Panel, gbc);
-        gbc.gridx = 1;
-        gbc.anchor = GridBagConstraints.SOUTHEAST;
-        layout.setConstraints(columnNameButtonPanel, gbc);
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        
+
         gbc.gridwidth = 2;
-        gbc.gridx = 0;
         gbc.gridy++;
-        layout.setConstraints(yOpenClosePanel, gbc);
+        layout.setConstraints(yOpenCloseWrapperPanel, gbc);
         gbc.gridy++;
         layout.setConstraints(y1LeftPanel, gbc);
         gbc.gridy++;
@@ -690,7 +715,15 @@ public class SmartChartManager {
         gbc.gridy++;
         layout.setConstraints(y3LeftPanel, gbc);
         gbc.gridy++;
+        layout.setConstraints(y3RightPanel, gbc);
+        gbc.gridy++;
         layout.setConstraints(y4LeftPanel, gbc);
+        gbc.gridy++;
+        layout.setConstraints(y4RightPanel, gbc);
+        gbc.gridy++;
+        layout.setConstraints(y5LeftPanel, gbc);
+        gbc.gridy++;
+        layout.setConstraints(y5RightPanel, gbc);
         gbc.gridy++;
         gbc.weighty = 1.0d;
         gbc.anchor = GridBagConstraints.NORTHEAST;
@@ -714,23 +747,47 @@ public class SmartChartManager {
         layout = new GridBagLayout();
         yOpenClosePanel.setLayout(layout);
         gbc = new GridBagConstraints();
-        gbc.insets = new Insets(1, 10, 1, 10);
+        gbc.insets = new Insets(2, 10, 2, 10);
         
         gbc.gridx = 0;
         gbc.gridy = 0;
         layout.setConstraints(y1Left2Label, gbc);
         gbc.gridx++;
-        layout.setConstraints(y1RightLabel, gbc);
-        gbc.gridx++;
         layout.setConstraints(y2LeftLabel, gbc);
-        gbc.gridx++;
-        layout.setConstraints(y2RithtLabel, gbc);
         gbc.gridx++;
         layout.setConstraints(y3LeftLabel, gbc);
         gbc.gridx++;
         layout.setConstraints(y4LeftLabel, gbc);
+        gbc.gridx++;
+        layout.setConstraints(y5LeftLabel, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        layout.setConstraints(y1RightLabel, gbc);
+        gbc.gridx++;
+        layout.setConstraints(y2RithtLabel, gbc);
+        gbc.gridx++;
+        layout.setConstraints(y3RithtLabel, gbc);
+        gbc.gridx++;
+        layout.setConstraints(y4RithtLabel, gbc);
+        gbc.gridx++;
+        layout.setConstraints(y5RithtLabel, gbc);
         
-        // colume name panel
+        // MultiAxis Panel
+        multiAxisPanel.setBorder(new TitledBorder("Multi Axis"));
+        layout = new GridBagLayout();
+        multiAxisPanel.setLayout(layout);
+        gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.insets = new Insets(2, 1, 2, 1);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        layout.setConstraints(gapField, gbc);
+        gbc.gridx++;
+        layout.setConstraints(separateLegendCheckBox, gbc);
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.gridy++;
+        layout.setConstraints(columnNameButton, gbc);
         
         // window panel
         windowPanel.setBorder(new TitledBorder("Window"));
@@ -752,6 +809,21 @@ public class SmartChartManager {
         layout.setConstraints(newChartFrameCheckBox, gbc);
         gbc.gridx++;
         layout.setConstraints(crosshairOverlayCheckBox, gbc);
+        
+        
+        // Map
+        axisPanelMap.put(AxisPosition.X1, xPanel);
+        axisPanelMap.put(AxisPosition.Y1, y1Panel);
+        axisPanelMap.put(AxisPosition.Y1_LEFT2, y1LeftPanel);
+        axisPanelMap.put(AxisPosition.Y1_RIGHT, y1RightPanel);
+        axisPanelMap.put(AxisPosition.Y2_LEFT, y2LeftPanel);
+        axisPanelMap.put(AxisPosition.Y2_RIGHT, y2RightPanel);
+        axisPanelMap.put(AxisPosition.Y3_LEFT, y3LeftPanel);
+        axisPanelMap.put(AxisPosition.Y3_RIGHT, y3RightPanel);
+        axisPanelMap.put(AxisPosition.Y4_LEFT, y4LeftPanel);
+        axisPanelMap.put(AxisPosition.Y4_RIGHT, y4RightPanel);
+        axisPanelMap.put(AxisPosition.Y5_LEFT, y5LeftPanel);
+        axisPanelMap.put(AxisPosition.Y5_RIGHT, y5RightPanel);
     }
     
     private void intOpenCloseLabels() {
@@ -760,21 +832,33 @@ public class SmartChartManager {
         y2LeftLabel.setBackground(OPEN_PANEL_COLOR);
         y2RithtLabel.setBackground(OPEN_PANEL_COLOR);
         y3LeftLabel.setBackground(OPEN_PANEL_COLOR);
+        y3RithtLabel.setBackground(OPEN_PANEL_COLOR);
         y4LeftLabel.setBackground(OPEN_PANEL_COLOR);
-
+        y4RithtLabel.setBackground(OPEN_PANEL_COLOR);
+        y5LeftLabel.setBackground(OPEN_PANEL_COLOR);
+        y5RithtLabel.setBackground(OPEN_PANEL_COLOR);
+        
         y1Left2Label.setOpaque(true);
         y1RightLabel.setOpaque(true);
         y2LeftLabel.setOpaque(true);
         y2RithtLabel.setOpaque(true);
         y3LeftLabel.setOpaque(true);
+        y3RithtLabel.setOpaque(true);
         y4LeftLabel.setOpaque(true);
+        y4RithtLabel.setOpaque(true);
+        y5LeftLabel.setOpaque(true);
+        y5RithtLabel.setOpaque(true);
         
         y1Left2Label.setPreferredSize(new Dimension(80, 25));
         y1RightLabel.setPreferredSize(new Dimension(80, 25));
         y2LeftLabel.setPreferredSize(new Dimension(80, 25));
         y2RithtLabel.setPreferredSize(new Dimension(80, 25));
         y3LeftLabel.setPreferredSize(new Dimension(80, 25));
+        y3RithtLabel.setPreferredSize(new Dimension(80, 25));
         y4LeftLabel.setPreferredSize(new Dimension(80, 25));
+        y4RithtLabel.setPreferredSize(new Dimension(80, 25));
+        y5LeftLabel.setPreferredSize(new Dimension(80, 25));
+        y5RithtLabel.setPreferredSize(new Dimension(80, 25));
         
         y1Left2Label.addMouseListener(new MouseAdapter() {
             @Override public void mousePressed(MouseEvent e) {
@@ -801,9 +885,29 @@ public class SmartChartManager {
                 openClosePanel(y3LeftPanel, y3LeftLabel);
             }
         });
+        y3RithtLabel.addMouseListener(new MouseAdapter() {
+            @Override public void mousePressed(MouseEvent e) {
+                openClosePanel(y3RightPanel, y3RithtLabel);
+            }
+        });
         y4LeftLabel.addMouseListener(new MouseAdapter() {
             @Override public void mousePressed(MouseEvent e) {
                 openClosePanel(y4LeftPanel, y4LeftLabel);
+            }
+        });
+        y4RithtLabel.addMouseListener(new MouseAdapter() {
+            @Override public void mousePressed(MouseEvent e) {
+                openClosePanel(y4RightPanel, y4RithtLabel);
+            }
+        });
+        y5LeftLabel.addMouseListener(new MouseAdapter() {
+            @Override public void mousePressed(MouseEvent e) {
+                openClosePanel(y5LeftPanel, y5LeftLabel);
+            }
+        });
+        y5RithtLabel.addMouseListener(new MouseAdapter() {
+            @Override public void mousePressed(MouseEvent e) {
+                openClosePanel(y5RightPanel, y5RithtLabel);
             }
         });
         
@@ -811,7 +915,11 @@ public class SmartChartManager {
         openClosePanel(y1LeftPanel, y1Left2Label);
         openClosePanel(y2RightPanel, y2RithtLabel);
         openClosePanel(y3LeftPanel, y3LeftLabel);
+        openClosePanel(y3RightPanel, y3RithtLabel);
         openClosePanel(y4LeftPanel, y4LeftLabel);
+        openClosePanel(y4RightPanel, y4RithtLabel);
+        openClosePanel(y5LeftPanel, y5LeftLabel);
+        openClosePanel(y5RightPanel, y5RithtLabel);
         
         // delete not use items
         // X
@@ -823,31 +931,26 @@ public class SmartChartManager {
         y1Panel.columnNameCombo.setVisible(false);
         
         // Y1 Left
+        y1LeftPanel.disableForRightAxis();
         y1LeftPanel.labelField.setEnabled(false);
         y1LeftPanel.minField.setEnabled(false);
         y1LeftPanel.maxField.setEnabled(false);
         y1LeftPanel.includeZeroCheckbox.setEnabled(false);
-        y1LeftPanel.markerLineField.setEnabled(false);
-        y1LeftPanel.weightField.setEnabled(false);
-        
         y1LeftPanel.labelField.setBackground(Color.GRAY);
         y1LeftPanel.minField.setBackground(Color.GRAY);
         y1LeftPanel.maxField.setBackground(Color.GRAY);
         y1LeftPanel.includeZeroCheckbox.setBackground(Color.GRAY);
-        y1LeftPanel.markerLineField.setBackground(Color.GRAY);
-        y1LeftPanel.weightField.setBackground(Color.GRAY);
         
         // Y1 Right
-        y1RightPanel.weightField.setEnabled(false);
-        y1RightPanel.markerLineField.setEnabled(false);
-        y1RightPanel.weightField.setBackground(Color.GRAY);
-        y1RightPanel.markerLineField.setBackground(Color.GRAY);
-        
+        y1RightPanel.disableForRightAxis();
         // Y2 Right
-        y2RightPanel.weightField.setEnabled(false);
-        y2RightPanel.markerLineField.setEnabled(false);
-        y2RightPanel.weightField.setBackground(Color.GRAY);
-        y2RightPanel.markerLineField.setBackground(Color.GRAY);
+        y2RightPanel.disableForRightAxis();
+        // Y3 Right
+        y3RightPanel.disableForRightAxis();
+        // Y4 Right
+        y4RightPanel.disableForRightAxis();
+        // Y5 Right
+        y5RightPanel.disableForRightAxis();
     }
     
     private void openClosePanel(JPanel panel, JLabel label) {
@@ -861,12 +964,28 @@ public class SmartChartManager {
             label.setBackground(CLOSE_PANEL_COLOR);
         }
         panel.revalidate();
+        
+        // re-size frame
+        settingPanel.setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT_BASE + countVisiblePanel() * PANEL_HEIGHT_PER_ITEM));
+        frame.pack();
+    }
+    
+    private int countVisiblePanel() {
+        int countVisible = 0;
+        for (AddtionalAxisPanel axisPanel : axisPanelMap.values()) {
+            if (axisPanel.isVisible()) {
+                countVisible++;
+            }
+        }
+        return countVisible;
     }
     
     class AddtionalAxisPanel extends JPanel {
         private static final long serialVersionUID = 1L;
         @SuppressWarnings("unused")
         private String itemName;
+        @SuppressWarnings("unused")
+        private AxisPosition axisPosition;
 
         private JTextField labelField = new GuideTextField("Label", TEXT_FIELD_COLUMNS_LONG);
         private JTextField minField = new GuideTextField("Min", TEXT_FIELD_COLUMNS_NORMAL);
@@ -877,8 +996,9 @@ public class SmartChartManager {
         private JComboBox<String> columnNameCombo = new JComboBox<>(new String[]{DEFAULT_COLUMN_NAME});
         private JTextField weightField = new GuideTextField("weight", "1", TEXT_FIELD_COLUMNS_SHORT);
         
-        public AddtionalAxisPanel(String itemName) {
+        public AddtionalAxisPanel(String itemName, AxisPosition axisPosition) {
             this.itemName = itemName;
+            this.axisPosition = axisPosition;
             
             // Component
             chartCombo.setPreferredSize(new Dimension(100, 25));
@@ -930,6 +1050,13 @@ public class SmartChartManager {
             columnNameCombo.removeAllItems();
             columnNameCombo.addItem(DEFAULT_COLUMN_NAME);
             ((GuideTextField) weightField).clearText("1");
+        }
+        
+        private void disableForRightAxis() {
+            weightField.setEnabled(false);
+            markerLineField.setEnabled(false);
+            weightField.setBackground(Color.GRAY);
+            markerLineField.setBackground(Color.GRAY);
         }
     }
 }
