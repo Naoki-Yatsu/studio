@@ -43,6 +43,7 @@ public class QCompletionQuery implements CompletionQuery
             "abs","acos","aj","aj0","all","and","any","asc","asin","asof","atan","attr","avg","avgs","bin","boolean","by","byte","ceiling","char","cols","cor","cos","count","cov","cross","csv","cut","date","datetime","delete","deltas","desc","dev","differ","distinct","div","do","each","ej","enlist","eval","except","exec","exit","exp","fby","fills","first","fkeys","flip","float","floor","from","get","getenv","group","gtime","guid","hclose","hcount","hdel","hopen","hsym","iasc","idesc","if","ij","in","insert","int","inter","inv","key","keys","last","like","list","lj","load","log","long","lower","lsq","ltime","ltrim","mavg","max","maxs","mcount","md5","mdev","med","meta","min","mins","minute","mmax","mmin","mmu","mod","month","msum","neg","next","not","null","or","over","parse","peach","pj","plist","prd","prds","prev","prior","rand","rank","ratios","raze","read0","read1","real","reciprocal","reverse","rload","rotate","rsave","rtrim","save","scan","scov","sdev","second","select","set","setenv","short","show","signum","sin","sqrt","ss","ssr","string","sublist","sum","sums","sv","svar","symbol","system","tables","tan","til","time","timespan","timestamp","trim","txf","type","uj","ungroup","union","update","upper","upsert","value","var","view","views","vs","wavg","where","while","within","wj","wj1","wsum","xasc","xbar","xcol","xcols","xdesc","xexp","xgroup","xkey","xlog","xprev","xrank"
         };
 
+    /** variables used for highlight */
     private static final Set<String> variableSet = new HashSet<>(100);
 
     private static final String QUERY_TITLE_COLUMN = "Columns";
@@ -131,30 +132,33 @@ public class QCompletionQuery implements CompletionQuery
                         ConnectionPool.getInstance().checkConnected(c);
 
                         if (text.endsWith(".")) {
+                            // query cols
                             queryTitle = QUERY_TITLE_COLUMN + ": " + tablename + "  ";
                             tablename = text.substring(0, text.length() - 1);
                             currentIcon = Util.getImage(Config.imageBase2 + "column.png");
                             c.k(new K.KCharacterVector("cols " + tablename));
 
                         } else if (tablename != null && !tablename.equals("") && !tablename.equals(" ")) {
+                            // query cols and others
                             if (prefix.length() > 1) {
                                 queryTitle = QUERY_TITLE_COLUMN + ": " + tablename + " - " + prefix + "  ";
                             } else {
                                 queryTitle = QUERY_TITLE_COLUMN + ": " + tablename;
                             }
                             currentIcon = Util.getImage(Config.imageBase2 + "column.png");
-//                            c.k(new K.KCharacterVector("cols " + tablename));
-                            c.k(new K.KCharacterVector("(cols " + tablename + "),(`" +QUERY_DELIMITER + "),tables[],views[],(system \"f\"),(system \"v\")"));
+                            // Query: (cols [tablename]),(`QUERY_DELIMITER),tables[],views[],(system "f"),(system "v")
+                            c.k(new K.KCharacterVector("(cols " + tablename + "),`" + QUERY_DELIMITER + ",tables[],views[],(system \"f\"),(system \"v\")"));
 
                         } else {
+                            // default: query tables and others
                             if (prefix.length() > 1) {
                                 queryTitle = QUERY_TITLE_TABLE + " - " + prefix + "  ";
                             } else {
                                 queryTitle = QUERY_TITLE_TABLE;
                             }
                             currentIcon = Util.getImage(Config.imageBase2 + "table.png");
-                            //c.k(new K.KCharacterVector("tables[]"));
-                            c.k(new K.KCharacterVector("tables[]" + ",(`" +QUERY_DELIMITER + "),views[],(system \"f\"),(system \"v\")"));
+                            // Query: tables[],(`QUERY_DELIMITER),tables[],views[],(system "f"),(system "v")
+                            c.k(new K.KCharacterVector("tables[]" + ",`" + QUERY_DELIMITER + ",views[],(system \"f\"),(system \"v\")"));
                         }
 
                         Object res = c.getResponse();
@@ -187,10 +191,13 @@ public class QCompletionQuery implements CompletionQuery
                         }
                     }
                 }
+                
+                // update variables of all namespaces
+                updateAllNamaspaceVariables(s);
             }
         } catch (Throwable th) {
         }
-
+        
         return r;
     }
 
@@ -273,6 +280,35 @@ public class QCompletionQuery implements CompletionQuery
         return result;
     }
 
+    /**
+     * Add variables for all namesspaces to variableSet
+     */
+    private static void updateAllNamaspaceVariables(Server s) {
+        kx.c c = null;
+        try {
+            c = ConnectionPool.getInstance().leaseConnection(s);
+            ConnectionPool.getInstance().checkConnected(c);
+            
+            // query to get all keys for each namespaces
+            String query = "raze {(` sv x ,/:) each key ` _ value x} each {` sv `,x} each (key`) where not (key`) in `q`Q`h`j`o";
+            c.k(new K.KCharacterVector(query));
+            
+            Object res = c.getResponse();
+            if (res instanceof K.KSymbolVector) {
+                K.KSymbolVector symbols = (K.KSymbolVector)res;
+                for (int i = 0; i < symbols.getLength(); i++) {
+                    K.KSymbol symbol = (K.KSymbol) symbols.at(i);
+                    variableSet.add(symbol.s);
+                }
+            }
+        } catch (Throwable th) {
+        } finally {
+            if (c != null) {
+                ConnectionPool.getInstance().freeConnection(s, c);
+            }
+        }
+    }
+    
     public static Set<String> getVariableSet() {
         return variableSet;
     }

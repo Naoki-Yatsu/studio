@@ -18,6 +18,8 @@ Required Library
 * jcommon-1.0.23.jar
 * commons-lang3-3.3.2.jar
 
+You can get one-packege version at releases/studio_ny2.jar.
+
 Bug Fix
 -----------
 
@@ -43,12 +45,14 @@ Multi-axis Chart Function
 
 This version is able to create multi-axis chart. 
 
-* X-axis is only one, Y-axes are 1-5 and right axis is enabled.
-* Bar, Scatter and OHLC can be used.
+* Multi-Axis
+  X-axis is only one, Y-axes are 1-5 and left-right axis is enabled.
+* Chart Type
+Line, Line-Marker, Bar, Scatter and OHLC. (Bar-Density is not implemented yet.)
 * Show corss-hair for first item for each Y-axis.
 * Show horizontal and vertical line for X-Y axis.
 
-![alt tag](https://raw.githubusercontent.com/Naoki-Yatsu/studio/master/meta/console.png)
+![alt tag](https://raw.githubusercontent.com/Naoki-Yatsu/studio/master/meta/concole.png)
 
 ![alt tag](https://raw.githubusercontent.com/Naoki-Yatsu/studio/master/meta/multi-chart.png)
 
