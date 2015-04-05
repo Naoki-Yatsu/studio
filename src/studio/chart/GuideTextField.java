@@ -6,6 +6,8 @@ import java.awt.event.FocusListener;
 
 import javax.swing.JTextField;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class GuideTextField extends JTextField implements FocusListener {
 
     private static final long serialVersionUID = 1L;
@@ -61,9 +63,10 @@ public class GuideTextField extends JTextField implements FocusListener {
     }
     
     public void clearText(String init) {
-        if (init == null) {
+        if (StringUtils.isEmpty(init)) {
             setText("");
         } else {
+            setForeground(Color.BLACK);
             setText(init);
         }
         backupText = getText();

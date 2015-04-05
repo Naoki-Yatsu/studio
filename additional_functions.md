@@ -52,7 +52,7 @@ Line, Line-Marker, Bar, Scatter and OHLC. (Bar-Density is not implemented yet.)
 * Show corss-hair for first item for each Y-axis.
 * Show horizontal and vertical line for X-Y axis.
 
-![alt tag](https://raw.githubusercontent.com/Naoki-Yatsu/studio/master/meta/concole.png)
+![alt tag](https://raw.githubusercontent.com/Naoki-Yatsu/studio/master/meta/console_guide.png)
 
 ![alt tag](https://raw.githubusercontent.com/Naoki-Yatsu/studio/master/meta/multi-chart.png)
 

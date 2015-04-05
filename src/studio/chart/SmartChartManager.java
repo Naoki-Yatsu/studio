@@ -12,8 +12,11 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +35,7 @@ import javax.swing.border.TitledBorder;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
@@ -43,6 +47,7 @@ import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.Plot;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.data.Range;
 
 import studio.chart.ChartSetting.ChartAxisSetting;
 import studio.kdb.Config;
@@ -53,20 +58,42 @@ import studio.ui.Util;
 public class SmartChartManager {
     
     // //////////////////////////////////////
-    // Filed
+    // Filed (final)
     // //////////////////////////////////////
 
-    private static final int PANEL_WIDTH = 730;
-    private static final int PANEL_HEIGHT_BASE = 240;
+    private static final int PANEL_WIDTH;
+    private static final int PANEL_HEIGHT_BASE;
     private static final int PANEL_HEIGHT_PER_ITEM = 50;
     
     private static final int TEXT_FIELD_COLUMNS_NORMAL = 6;
     private static final int TEXT_FIELD_COLUMNS_LONG = 8;
+    private static final int TEXT_FIELD_COLUMNS_LONGLONG = 10;
     private static final int TEXT_FIELD_COLUMNS_SHORT = 4;
     private static final String DEFAULT_COLUMN_NAME = "(Separator)";
     
-    private static final Color OPEN_PANEL_COLOR = new Color(255, 255, 127);
     private static final Color CLOSE_PANEL_COLOR = Color.LIGHT_GRAY;
+    private static final Color COLOR1 = new Color(255, 207, 207);
+    private static final Color COLOR2 = new Color(255, 255, 167);
+    private static final Color COLOR3 = new Color(192, 255, 192);
+    private static final Color COLOR4 = new Color(192, 255, 255);
+    private static final Color COLOR5 = new Color(207, 207, 255);
+    
+    // set window size by OS
+    static {
+        int panelWidthBase = 740;
+        int panelHeightBase = 220;
+        if(System.getProperty("os.name","").contains("OS X")){ 
+            PANEL_WIDTH = panelWidthBase + 120;
+            PANEL_HEIGHT_BASE = panelHeightBase + 40;
+        } else {
+            PANEL_WIDTH = panelWidthBase;
+            PANEL_HEIGHT_BASE = panelHeightBase;
+        }
+    }
+    
+    // //////////////////////////////////////
+    // Filed
+    // //////////////////////////////////////
     
     private static SmartChartManager instance;
     
@@ -98,8 +125,10 @@ public class SmartChartManager {
     private JButton updateButton = new JButton("Update Chart");
     private JButton clearButton = new JButton("Clear Settings");
     private JButton columnNameButton = new JButton("Update Separator");
+    private JButton fillRangeButton = new JButton("Fill Range");
+    private JButton clearRangeButton = new JButton("Clear Range");
     private JTextField gapField = new GuideTextField("Multi-Gap(-5.0)", TEXT_FIELD_COLUMNS_LONG);
-    private JCheckBox separateLegendCheckBox = new JCheckBox("S.Leg.", ChartSetting.SEPARETE_LEGEND_DEFAULT);
+    private JCheckBox separateLegendCheckBox = new JCheckBox("Sep.Leg.", ChartSetting.SEPARETE_LEGEND_DEFAULT);
     
     // Window
     private JTextField titleField = new GuideTextField("Title", TEXT_FIELD_COLUMNS_LONG);
@@ -123,18 +152,18 @@ public class SmartChartManager {
     
     // Additional Axis Panel
     private Map<AxisPosition, AddtionalAxisPanel> axisPanelMap = new EnumMap<>(AxisPosition.class);
-    private AddtionalAxisPanel xPanel = new AddtionalAxisPanel("X", AxisPosition.X1);
-    private AddtionalAxisPanel y1Panel = new AddtionalAxisPanel("Y1", AxisPosition.Y1);
-    private AddtionalAxisPanel y1LeftPanel = new AddtionalAxisPanel("Y1 Left2", AxisPosition.Y1_LEFT2);
-    private AddtionalAxisPanel y1RightPanel = new AddtionalAxisPanel("Y1 Right", AxisPosition.Y1_RIGHT);
-    private AddtionalAxisPanel y2LeftPanel = new AddtionalAxisPanel("Y2 Left", AxisPosition.Y2_LEFT);
-    private AddtionalAxisPanel y2RightPanel = new AddtionalAxisPanel("Y2 Right", AxisPosition.Y2_RIGHT);
-    private AddtionalAxisPanel y3LeftPanel = new AddtionalAxisPanel("Y3 Left", AxisPosition.Y3_LEFT);
-    private AddtionalAxisPanel y3RightPanel = new AddtionalAxisPanel("Y3 Right", AxisPosition.Y3_RIGHT);
-    private AddtionalAxisPanel y4LeftPanel = new AddtionalAxisPanel("Y4 Left", AxisPosition.Y4_LEFT);
-    private AddtionalAxisPanel y4RightPanel = new AddtionalAxisPanel("Y4 Right", AxisPosition.Y4_RIGHT);
-    private AddtionalAxisPanel y5LeftPanel = new AddtionalAxisPanel("Y5 Left", AxisPosition.Y5_LEFT);
-    private AddtionalAxisPanel y5RightPanel = new AddtionalAxisPanel("Y5 Right", AxisPosition.Y5_RIGHT);
+    private AddtionalAxisPanel xPanel = new AddtionalAxisPanel("X", AxisPosition.X1, null);
+    private AddtionalAxisPanel y1Panel = new AddtionalAxisPanel("Y1", AxisPosition.Y1, null);
+    private AddtionalAxisPanel y1LeftPanel = new AddtionalAxisPanel("Y1 Left2", AxisPosition.Y1_LEFT2, COLOR1);
+    private AddtionalAxisPanel y1RightPanel = new AddtionalAxisPanel("Y1 Right", AxisPosition.Y1_RIGHT, COLOR1);
+    private AddtionalAxisPanel y2LeftPanel = new AddtionalAxisPanel("Y2 Left", AxisPosition.Y2_LEFT, COLOR2);
+    private AddtionalAxisPanel y2RightPanel = new AddtionalAxisPanel("Y2 Right", AxisPosition.Y2_RIGHT, COLOR2);
+    private AddtionalAxisPanel y3LeftPanel = new AddtionalAxisPanel("Y3 Left", AxisPosition.Y3_LEFT, COLOR3);
+    private AddtionalAxisPanel y3RightPanel = new AddtionalAxisPanel("Y3 Right", AxisPosition.Y3_RIGHT, COLOR3);
+    private AddtionalAxisPanel y4LeftPanel = new AddtionalAxisPanel("Y4 Left", AxisPosition.Y4_LEFT, COLOR4);
+    private AddtionalAxisPanel y4RightPanel = new AddtionalAxisPanel("Y4 Right", AxisPosition.Y4_RIGHT, COLOR4);
+    private AddtionalAxisPanel y5LeftPanel = new AddtionalAxisPanel("Y5 Left", AxisPosition.Y5_LEFT, COLOR5);
+    private AddtionalAxisPanel y5RightPanel = new AddtionalAxisPanel("Y5 Right", AxisPosition.Y5_RIGHT, COLOR5);
 
     
     // //////////////////////////////////////
@@ -192,7 +221,7 @@ public class SmartChartManager {
         if (table != null) {
             createChart(table, newChartFrameCheckBox.isSelected());
         } else {
-
+            JOptionPane.showMessageDialog(frame, "No table for creating chart.", "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -340,9 +369,51 @@ public class SmartChartManager {
             // include zero
             ((NumberAxis)axis).setAutoRangeIncludesZero(includeZero);
             
-        } else if (axis instanceof DateAxis) { 
+        } else if (axis instanceof DateAxis) {
             // DateAxis
-            return;
+            if (Double.isNaN(lower) && Double.isNaN(upper)) {
+                axis.setAutoRange(true);
+            } else if (lower >= upper && !Double.isNaN(lower) && !Double.isNaN(upper)) {
+                axis.setAutoRange(true);
+            } else {
+                // lower
+                if (Double.isNaN(lower)) {
+                    lower = axis.getRange().getLowerBound();
+                } else {
+                    // check day is set or not
+                    Calendar cal = DateUtils.toCalendar(new Date((long) lower));
+                    if (cal.get(Calendar.YEAR) == 1970) {
+                        Calendar axisCal = DateUtils.toCalendar(new Date((long) axis.getRange().getLowerBound()));
+                        if (cal.get(Calendar.MONTH) == 0 && cal.get(Calendar.DAY_OF_MONTH) == 1) {
+                            // replace year/month/day
+                            cal.set(axisCal.get(Calendar.YEAR), axisCal.get(Calendar.MONTH), axisCal.get(Calendar.DAY_OF_MONTH)); 
+                        } else {
+                         // replace year
+                            cal.set(Calendar.YEAR, axisCal.get(Calendar.YEAR));
+                        }
+                        lower = cal.getTimeInMillis();
+                    }
+                }
+                // upper
+                if (Double.isNaN(upper)) {
+                    upper = axis.getRange().getUpperBound();
+                } else {
+                    // check day is set or not
+                    Calendar cal = DateUtils.toCalendar(new Date((long) upper));
+                    if (cal.get(Calendar.YEAR) == 1970) {
+                        Calendar axisCal = DateUtils.toCalendar(new Date((long) axis.getRange().getUpperBound()));
+                        if (cal.get(Calendar.MONTH) == 0 && cal.get(Calendar.DAY_OF_MONTH) == 1) {
+                            // replace year/month/day
+                            cal.set(axisCal.get(Calendar.YEAR), axisCal.get(Calendar.MONTH), axisCal.get(Calendar.DAY_OF_MONTH)); 
+                        } else {
+                         // replace year
+                            cal.set(Calendar.YEAR, axisCal.get(Calendar.YEAR));
+                        }
+                        upper = cal.getTimeInMillis();
+                    }
+                }
+                axis.setRange(lower, upper);
+            }
             
         } else {
             return;
@@ -403,7 +474,13 @@ public class SmartChartManager {
         if (NumberUtils.isNumber(field.getText())) {
             return Double.parseDouble(field.getText());
         } else {
-            return Double.NaN;
+            // For date string parse
+            Date date = DateUtility.parseDate(field.getText());
+            if (date != null) {
+                return date.getTime();
+            } else {
+                return Double.NaN; 
+            }
         }
     }
     
@@ -560,6 +637,106 @@ public class SmartChartManager {
         }
     }
     
+    /**
+     * fill all axis range using current min/max
+     */
+    private void fillCurrentRangeAll() {
+        // clear all ranges
+        clearAllRange();
+        if (chart == null) {
+            JOptionPane.showMessageDialog(frame, "No chart.", "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // plot
+        Plot plot = chart.getPlot();
+        
+        // do nothing for CategoryPlot
+        if (plot instanceof CategoryPlot) {
+            return;
+        }
+        
+        // x
+        if (plot instanceof XYPlot) {
+            fillRangeToField(chart.getXYPlot().getDomainAxis(), AxisPosition.X1);
+        }
+        
+        // y
+        if (plot instanceof CombinedDomainXYPlot) {
+            // Multi-plot
+            @SuppressWarnings("unchecked")
+            List<XYPlot> plots = ((CombinedDomainXYPlot) plot).getSubplots();
+            switch (plots.size()) {
+                case 5:
+                    XYPlot xyPlot = plots.get(4);
+                    fillRangeToField(xyPlot.getRangeAxis(), AxisPosition.Y5_LEFT);
+                    if (xyPlot.getRangeAxisCount() == 2) {
+                        fillRangeToField(xyPlot.getRangeAxis(), AxisPosition.Y5_RIGHT);
+                    }
+                case 4:
+                    xyPlot = plots.get(3);
+                    fillRangeToField(xyPlot.getRangeAxis(), AxisPosition.Y4_LEFT);
+                    if (xyPlot.getRangeAxisCount() == 2) {
+                        fillRangeToField(xyPlot.getRangeAxis(), AxisPosition.Y4_RIGHT);
+                    }
+                case 3:
+                    xyPlot = plots.get(2);
+                    fillRangeToField(xyPlot.getRangeAxis(), AxisPosition.Y3_LEFT);
+                    if (xyPlot.getRangeAxisCount() == 2) {
+                        fillRangeToField(xyPlot.getRangeAxis(), AxisPosition.Y3_RIGHT);
+                    }
+                case 2:
+                    xyPlot = plots.get(1);
+                    fillRangeToField(xyPlot.getRangeAxis(), AxisPosition.Y2_LEFT);
+                    if (xyPlot.getRangeAxisCount() == 2) {
+                        fillRangeToField(xyPlot.getRangeAxis(), AxisPosition.Y2_RIGHT);
+                    }
+                default:
+                    xyPlot = plots.get(0);
+                    fillRangeToField(xyPlot.getRangeAxis(), AxisPosition.Y1);
+                    if (xyPlot.getRangeAxisCount() == 2) {
+                        fillRangeToField(xyPlot.getRangeAxis(), AxisPosition.Y1_RIGHT);
+                    }
+            }
+            
+        } else if (plot instanceof XYPlot) {
+            // one plot
+            XYPlot xyPlot = (XYPlot) plot;
+            fillRangeToField(xyPlot.getRangeAxis(), AxisPosition.Y1);
+            if (xyPlot.getRangeAxisCount() == 2) {
+                fillRangeToField(xyPlot.getRangeAxis(), AxisPosition.Y1_RIGHT);
+            }
+        }        
+    }
+    
+    private void fillRangeToField(ValueAxis axis, AxisPosition axisPosition) {
+        AddtionalAxisPanel panel = axisPanelMap.get(axisPosition);
+        Range range = axis.getRange();
+        if (axis instanceof DateAxis) {
+            Date lowerDate = new Date((long)range.getLowerBound());
+            Date upperDate = new Date((long)range.getUpperBound());
+            if (DateUtility.compareDate(lowerDate, upperDate) != 0) {
+                ((GuideTextField) panel.minField).clearText(DateUtility.parseString(lowerDate, true));
+                ((GuideTextField) panel.maxField).clearText(DateUtility.parseString(upperDate, true));
+            } else {
+                // if lower and upper is the same date, don't show date.
+                ((GuideTextField) panel.minField).clearText(DateUtility.parseString(lowerDate, false));
+                ((GuideTextField) panel.maxField).clearText(DateUtility.parseString(upperDate, false));
+            }
+        } else {
+            ((GuideTextField) panel.minField).clearText(Double.toString(range.getLowerBound()));
+            ((GuideTextField) panel.maxField).clearText(Double.toString(range.getUpperBound()));
+        }
+    }
+    
+    private void clearAllRange() {
+        // Axis Items
+        for (Entry<AxisPosition, AddtionalAxisPanel> entry : axisPanelMap.entrySet()) {
+            ((GuideTextField) entry.getValue().minField).clearText("");
+            ((GuideTextField) entry.getValue().maxField).clearText("");
+        }
+    }
+    
     private String getStackTraceString(Exception e) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
@@ -616,7 +793,27 @@ public class SmartChartManager {
                 }
             }
         });
-
+        fillRangeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    fillCurrentRangeAll();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(frame, getStackTraceString(ex), "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        clearRangeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    clearAllRange();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(frame, getStackTraceString(ex), "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        
         //
         // Add components
         //
@@ -645,7 +842,10 @@ public class SmartChartManager {
         // Button
         chartButtonPanel.add(chartButton);
         chartButtonPanel.add(updateButton);
+        
         clearButtonPanel.add(clearButton);
+        clearButtonPanel.add(fillRangeButton);
+        clearButtonPanel.add(clearRangeButton);
         
         multiAxisPanel.add(columnNameButton);
         multiAxisPanel.add(gapField);    
@@ -726,7 +926,7 @@ public class SmartChartManager {
         layout.setConstraints(y5RightPanel, gbc);
         gbc.gridy++;
         gbc.weighty = 1.0d;
-        gbc.anchor = GridBagConstraints.NORTHEAST;
+        gbc.anchor = GridBagConstraints.NORTH;
         layout.setConstraints(clearButtonPanel, gbc);
 
         // button panel
@@ -735,12 +935,12 @@ public class SmartChartManager {
         chartButtonPanel.setLayout(layout);
         gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 5, 10);
-        
         gbc.gridx = 0;
         gbc.gridy = 0;
         layout.setConstraints(chartButton, gbc);
         gbc.gridy++;
         layout.setConstraints(updateButton, gbc);
+        
         
         // Y Open/Close
         yOpenClosePanel.setBorder(new TitledBorder("Open/Close Addtional Panel"));
@@ -789,6 +989,23 @@ public class SmartChartManager {
         gbc.gridy++;
         layout.setConstraints(columnNameButton, gbc);
         
+        // clear button panel
+        layout = new GridBagLayout();
+        clearButtonPanel.setLayout(layout);
+        clearButtonPanel.setPreferredSize(new Dimension(PANEL_WIDTH - 50, (int)clearButtonPanel.getPreferredSize().getHeight() + 10));
+        gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 5, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        layout.setConstraints(fillRangeButton, gbc);
+        gbc.gridx++;
+        layout.setConstraints(clearRangeButton, gbc);
+        gbc.gridx++;
+        gbc.weightx = 1.0d;
+        gbc.anchor = GridBagConstraints.EAST;
+        layout.setConstraints(clearButton, gbc);
+        
         // window panel
         windowPanel.setBorder(new TitledBorder("Window"));
         layout = new GridBagLayout();
@@ -827,17 +1044,6 @@ public class SmartChartManager {
     }
     
     private void intOpenCloseLabels() {
-        y1Left2Label.setBackground(OPEN_PANEL_COLOR);
-        y1RightLabel.setBackground(OPEN_PANEL_COLOR);
-        y2LeftLabel.setBackground(OPEN_PANEL_COLOR);
-        y2RithtLabel.setBackground(OPEN_PANEL_COLOR);
-        y3LeftLabel.setBackground(OPEN_PANEL_COLOR);
-        y3RithtLabel.setBackground(OPEN_PANEL_COLOR);
-        y4LeftLabel.setBackground(OPEN_PANEL_COLOR);
-        y4RithtLabel.setBackground(OPEN_PANEL_COLOR);
-        y5LeftLabel.setBackground(OPEN_PANEL_COLOR);
-        y5RithtLabel.setBackground(OPEN_PANEL_COLOR);
-        
         y1Left2Label.setOpaque(true);
         y1RightLabel.setOpaque(true);
         y2LeftLabel.setOpaque(true);
@@ -911,8 +1117,10 @@ public class SmartChartManager {
             }
         });
         
-        // close minor panels
+        // close all panels
         openClosePanel(y1LeftPanel, y1Left2Label);
+        openClosePanel(y1RightPanel, y1RightLabel);
+        openClosePanel(y2LeftPanel, y2LeftLabel);
         openClosePanel(y2RightPanel, y2RithtLabel);
         openClosePanel(y3LeftPanel, y3LeftLabel);
         openClosePanel(y3RightPanel, y3RithtLabel);
@@ -920,6 +1128,9 @@ public class SmartChartManager {
         openClosePanel(y4RightPanel, y4RithtLabel);
         openClosePanel(y5LeftPanel, y5LeftLabel);
         openClosePanel(y5RightPanel, y5RithtLabel);
+        
+        // open default
+        openClosePanel(y2LeftPanel, y2LeftLabel);
         
         // delete not use items
         // X
@@ -953,12 +1164,12 @@ public class SmartChartManager {
         y5RightPanel.disableForRightAxis();
     }
     
-    private void openClosePanel(JPanel panel, JLabel label) {
+    private void openClosePanel(AddtionalAxisPanel panel, JLabel label) {
         panel.setVisible(!panel.isVisible());
         boolean isVisible = panel.isVisible();
         if (isVisible) {
             label.setText(" -" +  label.getText().substring(2));
-            label.setBackground(OPEN_PANEL_COLOR);
+            label.setBackground(panel.color);
         } else {
             label.setText(" +" +  label.getText().substring(2));
             label.setBackground(CLOSE_PANEL_COLOR);
@@ -986,6 +1197,7 @@ public class SmartChartManager {
         private String itemName;
         @SuppressWarnings("unused")
         private AxisPosition axisPosition;
+        private Color color;
 
         private JTextField labelField = new GuideTextField("Label", TEXT_FIELD_COLUMNS_LONG);
         private JTextField minField = new GuideTextField("Min", TEXT_FIELD_COLUMNS_NORMAL);
@@ -996,13 +1208,18 @@ public class SmartChartManager {
         private JComboBox<String> columnNameCombo = new JComboBox<>(new String[]{DEFAULT_COLUMN_NAME});
         private JTextField weightField = new GuideTextField("weight", "1", TEXT_FIELD_COLUMNS_SHORT);
         
-        public AddtionalAxisPanel(String itemName, AxisPosition axisPosition) {
+        public AddtionalAxisPanel(String itemName, AxisPosition axisPosition, Color color) {
             this.itemName = itemName;
             this.axisPosition = axisPosition;
+            this.color = color;
             
             // Component
             chartCombo.setPreferredSize(new Dimension(100, 25));
             columnNameCombo.setPreferredSize(new Dimension(120, 25));
+            if (axisPosition == AxisPosition.X1) {
+                minField = new GuideTextField("Min", TEXT_FIELD_COLUMNS_LONGLONG);
+                maxField = new GuideTextField("Max", TEXT_FIELD_COLUMNS_LONGLONG);
+            }
             
             // initialize panel
             this.add(labelField);
@@ -1015,7 +1232,12 @@ public class SmartChartManager {
             this.add(weightField);
             
             // panel layout
-            this.setBorder(new TitledBorder(itemName + " Axis"));
+            TitledBorder border = new TitledBorder(itemName + " Axis");
+            setBorder(border);
+            if (color != null) {
+                setBackgroundBorderLabel(border, color);
+            }
+            // layout
             GridBagLayout layout = new GridBagLayout();
             this.setLayout(layout);
             GridBagConstraints gbc = new GridBagConstraints();
@@ -1057,6 +1279,19 @@ public class SmartChartManager {
             markerLineField.setEnabled(false);
             weightField.setBackground(Color.GRAY);
             markerLineField.setBackground(Color.GRAY);
+        }
+    }
+    
+    private static void setBackgroundBorderLabel(TitledBorder border, Color color) {
+        try {
+            Class<TitledBorder> clazz = TitledBorder.class;
+            Field borderLabelField = clazz.getDeclaredField("label");
+            borderLabelField.setAccessible(true);
+            JLabel label = (JLabel) borderLabelField.get(border);
+            label.setBackground(color);
+            label.setOpaque(true);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
