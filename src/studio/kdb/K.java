@@ -1367,6 +1367,16 @@ public class K {
         }
 
         @Override
+        public String toString(boolean showType) {
+            short[] objArray = (short[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append(objArray[i]).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
+        
+        @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             w.write(super.toString(showType));
 
@@ -1410,6 +1420,16 @@ public class K {
         @Override
         public KBase at(int i) {
             return new KInteger(Array.getInt(array,i));
+        }
+        
+        @Override
+        public String toString(boolean showType) {
+            int[] objArray = (int[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append(objArray[i]).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
         }
 
         @Override
@@ -1491,6 +1511,16 @@ public class K {
         public KBase at(int i) {
             return new KDouble(Array.getDouble(array,i));
         }
+        
+        @Override
+        public String toString(boolean showType) {
+            double[] objArray = (double[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append(objArray[i]).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
 
         @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
@@ -1552,6 +1582,16 @@ public class K {
         }
 
         @Override
+        public String toString(boolean showType) {
+            float[] objArray = (float[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append(objArray[i]).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
+        
+        @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             w.write(super.toString(showType));
 
@@ -1609,6 +1649,16 @@ public class K {
         }
 
         @Override
+        public String toString(boolean showType) {
+            long[] objArray = (long[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append(objArray[i]).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
+        
+        @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             w.write(super.toString(showType));
 
@@ -1654,6 +1704,16 @@ public class K {
             return new Month(Array.getInt(array,i));
         }
 
+        @Override
+        public String toString(boolean showType) {
+            int[] objArray = (int[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append((new Month(objArray[i])).toString(false)).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
+        
         @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             w.write(super.toString(showType));
@@ -1703,6 +1763,16 @@ public class K {
         }
 
         @Override
+        public String toString(boolean showType) {
+            int[] objArray = (int[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append((new KDate(objArray[i])).toString(false)).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
+        
+        @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             w.write(super.toString(showType));
 
@@ -1749,6 +1819,16 @@ public class K {
         public KBase at(int i) {
             return new KGuid((UUID)Array.get(array,i));
         }
+        
+        @Override
+        public String toString(boolean showType) {
+            UUID[] objArray = (UUID[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append(objArray[i].toString()).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
 
         @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
@@ -1785,6 +1865,16 @@ public class K {
             return new Minute(Array.getInt(array,i));
         }
 
+        @Override
+        public String toString(boolean showType) {
+            int[] objArray = (int[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append((new Minute(objArray[i])).toString(false)).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
+        
         @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             w.write(super.toString(showType));
@@ -1828,6 +1918,16 @@ public class K {
             return new KDatetime(Array.getDouble(array,i));
         }
 
+        @Override
+        public String toString(boolean showType) {
+            double[] objArray = (double[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append((new KDatetime(objArray[i])).toString(false)).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
+        
         @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             w.write(super.toString(showType));
@@ -1876,6 +1976,16 @@ public class K {
         public KBase at(int i) {
             return new KTimestamp(Array.getLong(array,i));
         }
+        
+        @Override
+        public String toString(boolean showType) {
+            long[] objArray = (long[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append((new KTimestamp(objArray[i])).toString(false)).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
 
         @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
@@ -1894,7 +2004,7 @@ public class K {
             }
         }
     }
-        public static class KTimespanVector extends KBaseVector {
+    public static class KTimespanVector extends KBaseVector {
         @Override
         public String getDataType() {
             return "Timespan Vector";
@@ -1911,6 +2021,16 @@ public class K {
             return new KTimespan(Array.getLong(array,i));
         }
 
+        @Override
+        public String toString(boolean showType) {
+            long[] objArray = (long[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append((new KTimespan(objArray[i])).toString(false)).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
+        
         @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             w.write(super.toString(showType));
@@ -1952,6 +2072,16 @@ public class K {
             write(o,getLength());
             for (int i = 0;i < getLength();i++)
                 write(o,Array.getInt(array,i));
+        }
+        
+        @Override
+        public String toString(boolean showType) {
+            int[] objArray = (int[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append((new Second(objArray[i])).toString(false)).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
         }
 
         @Override
@@ -2007,6 +2137,16 @@ public class K {
         }
 
         @Override
+        public String toString(boolean showType) {
+            int[] objArray = (int[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append((new KTime(objArray[i])).toString(false)).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
+        
+        @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             w.write(super.toString(showType));
 
@@ -2059,6 +2199,16 @@ public class K {
         }
 
         @Override
+        public String toString(boolean showType) {
+            boolean[] objArray = (boolean[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append(objArray[i]).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
+        }
+        
+        @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             w.write(super.toString(showType));
             if (getLength() == 0)
@@ -2097,6 +2247,16 @@ public class K {
             write(o,getLength());
             for (int i = 0;i < getLength();i++)
                 write(o,Array.getByte(array,i));
+        }
+        
+        @Override
+        public String toString(boolean showType) {
+            byte[] objArray = (byte[]) array;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < getLength();i++) {
+                sb.append(objArray[i]).append(" ");
+            }
+            return sb.deleteCharAt(sb.length() - 1).toString();
         }
 
         @Override
@@ -2208,7 +2368,6 @@ public class K {
             if (showType)
                 w.write("\"");
         }
-
 
 //      public String toString(boolean showType) {
 //          return String.valueOf((char[]) array);
