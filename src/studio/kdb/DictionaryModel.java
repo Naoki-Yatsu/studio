@@ -1,5 +1,8 @@
 package studio.kdb;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import studio.kdb.K.KBaseVector;
 import studio.kdb.K.KSymbol;
 
@@ -9,11 +12,9 @@ public class DictionaryModel extends KTableModel {
     private static final String VALUE_NAME = "value";
 
     private K.Dict dict;
-    private K.KBaseVector x;
-    private K.KBaseVector y;
-
-    private String keyName = KEY_NAME;
-    private String valueName = VALUE_NAME;
+    
+    private List<String> columnNames = new ArrayList<>();
+    private List<K.KBaseVector> columnValues = new ArrayList<>();
     
     public DictionaryModel(K.Dict obj) {
         setData(obj);
@@ -23,38 +24,42 @@ public class DictionaryModel extends KTableModel {
         dict = obj;
         
         if (dict.x instanceof K.KBaseVector) {
-            x = (K.KBaseVector) dict.x;
-            y = (K.KBaseVector) dict.y;
-        } else if (isKeyFlipPrintableDictionary(dict)) {
+            columnNames.add(KEY_NAME);
+            columnNames.add(VALUE_NAME);
+            columnValues.add((K.KBaseVector) dict.x);
+            columnValues.add((K.KBaseVector) dict.y);
+            
+        } else if (dict.x instanceof K.Flip){
             K.Flip flip = (K.Flip) dict.x;
-            keyName = ((KSymbol)flip.x.at(0)).toString(false);
-            valueName = "";
-            x = (K.KBaseVector) flip.y.at(0);
-            y = (K.KBaseVector) dict.y;
+            // keys
+            for (int i = 0; i < flip.y.getLength(); i++) {
+                columnNames.add(KEY_NAME + "=" + ((KSymbol)flip.x.at(i)).toString(false));
+                columnValues.add((K.KBaseVector) flip.y.at(i));
+            }
+            // value
+            columnNames.add(VALUE_NAME);
+            columnValues.add((K.KBaseVector) dict.y);
+        } else {
+            throw new RuntimeException("Unexpected class of dict.x : " + dict.x.getClass().toGenericString());
         }
     }
     
     public int getColumnCount() {
-        return 2;
+        return columnValues.size();
     }
 
     public int getRowCount() {
-        return x.getLength();
+        return columnValues.get(0).getLength();
     }
 
-    public Object getValueAt(int arg0, int arg1) {
-        if (arg1 == 0) {
-            return x.at(arg0);
-        } else if (arg1 ==1) {
-            return y.at(arg0);
-        } else {
-            return null;
-        }
+    public Object getValueAt(int row, int col) {
+        row = (sortIndex == null) ? row : sortIndex[row];
+        return columnValues.get(col).at(row);
     }
-
+    
     @Override
     public boolean isKey(int column) {
-        if (column == 0) {
+        if (column < columnValues.size() - 1) {
             return true;
         } else {
             return false;
@@ -63,24 +68,14 @@ public class DictionaryModel extends KTableModel {
 
     @Override
     public KBaseVector getColumn(int col) {
-        if (col == 0) {
-            return x;
-        } else if (col ==1) {
-            return y;
-        } else {
-            return null;
-        }
+        return columnValues.get(col);
     }
 
     @Override
     public void asc(int col) {
         sortIndex = null;
-        K.KBaseVector v = null;
-        if (col == 0) {
-            v = x;
-        } else {
-            v = y;
-        }
+        K.KBaseVector v = columnValues.get(col);
+        
         sortIndex = v.gradeUp();
         sorted = 1;
         sortedByColumn = col;
@@ -89,12 +84,8 @@ public class DictionaryModel extends KTableModel {
     @Override
     public void desc(int col) {
         sortIndex = null;
-        K.KBaseVector v = null;
-        if (col == 0) {
-            v = x;
-        } else {
-            v = y;
-        }
+        K.KBaseVector v = columnValues.get(col);
+        
         sortIndex = v.gradeDown();
         sorted = -1;
         sortedByColumn = col;
@@ -102,11 +93,7 @@ public class DictionaryModel extends KTableModel {
 
     @Override
     public String getColumnName(int col) {
-        if (col == 0) {
-            return keyName;
-        } else {
-            return valueName;
-        }
+        return columnNames.get(col);
     }
     
     public static boolean isDictionary(Object obj) {
@@ -117,25 +104,10 @@ public class DictionaryModel extends KTableModel {
         K.Dict dict = (K.Dict) obj;
         if (dict.x instanceof K.KBaseVector && dict.y instanceof K.KBaseVector) {
             return true;
-        } else {
-            // special dictionary
-            if (isKeyFlipPrintableDictionary(dict)) {
-                return true;
-            }
+        } else if (dict.x instanceof K.Flip){
+            return true;
         }
         // Otherwise it cannot be display as table.
-        return false;
-    }
-    
-    public static boolean isKeyFlipPrintableDictionary(K.Dict dict) {
-        if (dict.x instanceof K.Flip) {
-            K.Flip flip = (K.Flip) dict.x;
-            // Only when lenth == 1, it is printable
-            if (flip.x instanceof K.KBaseVector
-                    && ((K.KBaseVector)flip.x).getLength() == 1) {
-                return true;
-            }
-        }
         return false;
     }
 }

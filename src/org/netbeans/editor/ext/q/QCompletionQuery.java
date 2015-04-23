@@ -90,7 +90,7 @@ public class QCompletionQuery implements CompletionQuery
                     // If end with words[a-zA-Z_0-9] , set last words as prefix
                     String prefix = "";
                     if (foreThisLine.matches(".*\\w$")) {
-                        StringTokenizer token = new StringTokenizer(foreThisLine, " %$!&()=~#;:><?,+-'\"/*\n");
+                        StringTokenizer token = new StringTokenizer(foreThisLine, " %$!&()=~#;:><?,+-'\"/*\n[]{}");
                         while (token.hasMoreTokens()) {
                             prefix = token.nextToken();
                         }

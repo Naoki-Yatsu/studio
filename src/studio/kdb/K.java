@@ -1035,6 +1035,7 @@ public class K {
             return ts;
         }
     }
+    
     public static class Dict extends KBase {
         @Override
         public String getDataType() {
@@ -1064,11 +1065,30 @@ public class K {
             cx.append(updx);
             cy.append(updy);
         }
-
+        
+        @Override
+        public String toString(boolean showType) {
+            try {
+                LimitedWriter lw = new LimitedWriter(10*1024);
+                toString(lw, showType);
+                return lw.toString();
+            } catch (IOException e) {
+                try {
+                    // up to 5MB
+                    LimitedWriter lw = new LimitedWriter(5*1024*1024*1024);
+                    toString(lw, showType);
+                    return lw.toString();
+                } catch (IOException e2) {
+                }
+                return "";
+            }
+        }
+        
         @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             boolean useBrackets = getAttr()!=0||x instanceof Flip;
-            super.toString(w,showType);
+            // comment out (by ny2)
+            // super.toString(w,showType);
             if (useBrackets)
                 w.write("(");
             x.toString(w,showType);
@@ -1092,6 +1112,24 @@ public class K {
             type = 98;
             x = (K.KSymbolVector) X.x;
             y = (K.KBaseVector) X.y;
+        }
+        
+        @Override
+        public String toString(boolean showType) {
+            try {
+                LimitedWriter lw = new LimitedWriter(10*1024);
+                toString(lw, showType);
+                return lw.toString();
+            } catch (IOException e) {
+                try {
+                    // up to 5MB
+                    LimitedWriter lw = new LimitedWriter(5*1024*1024*1024);
+                    toString(lw, showType);
+                    return lw.toString();
+                } catch (IOException e2) {
+                }
+                return "";
+            }
         }
 
         @Override
@@ -1477,6 +1515,23 @@ public class K {
             return (KBase) Array.get(array,i);
         }
 
+        public String toString(boolean showType) {
+            try {
+                LimitedWriter lw = new LimitedWriter(getLength() * 100 + 100);
+                toString(lw, showType);
+                return lw.toString();
+            } catch (IOException e) {
+                try {
+                    // up to 5MB
+                    LimitedWriter lw = new LimitedWriter(5*1024*1024*1024);
+                    toString(lw, showType);
+                    return lw.toString();
+                } catch (IOException e2) {
+                }
+                return "";
+            }
+        }
+        
         @Override
         public void toString(LimitedWriter w,boolean showType) throws IOException {
             w.write(super.toString(showType));
