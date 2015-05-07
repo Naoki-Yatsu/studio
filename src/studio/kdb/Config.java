@@ -613,4 +613,29 @@ public class Config
 
         save();
     }
+    
+    /**
+     * Maximum count (= row * column) for graph. 
+     * @return
+     */
+    public int getGraphMaxCount() {
+        int maxCount = 2000000;
+        if( p != null) {
+            String maxCountStr = p.getProperty("graph.maxcount");
+            if(maxCountStr != null) {
+                maxCount = Integer.parseInt(maxCountStr);
+            } else {
+                setGraphMaxCount(maxCount);
+            }
+        }
+        return maxCount;
+    }
+    
+    public void setGraphMaxCount(int maxCount) {
+        if( p != null) {
+            p.setProperty("graph.maxcount", String.valueOf(maxCount));
+            save();
+        }
+    }
+    
 }

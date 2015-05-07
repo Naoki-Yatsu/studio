@@ -6,7 +6,10 @@
 package studio.ui;
 
 import javax.swing.*;
+import javax.swing.table.TableModel;
 import java.awt.*;
+
+import studio.kdb.Config;
 
 public class Util {
     public static ImageIcon getImage(String strFilename) {
@@ -42,4 +45,14 @@ public class Util {
 
         child.setLocation(x,y);
     }
+    
+    public static boolean checkItemCountForGraph(TableModel tablemodel) {
+        int maxCount = Config.getInstance().getGraphMaxCount();
+        if (tablemodel.getRowCount() * tablemodel.getColumnCount() <= maxCount) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
 }

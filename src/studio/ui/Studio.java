@@ -1289,7 +1289,13 @@ public class Studio extends JPanel implements Observer,WindowListener {
                                      new Integer(KeyEvent.VK_E),
                                      null) {
             public void actionPerformed(ActionEvent e) {
-                new LineChart((KTableModel) table.getModel());
+                if (Util.checkItemCountForGraph(table.getModel())) {
+                    new LineChart((KTableModel) table.getModel());
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Over max count limit = " + 
+                            Config.getInstance().getGraphMaxCount() + " (row count * column count). \n" + 
+                            "If you change limit, please set config graph.maxcount.", "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
+                }
             //new PriceVolumeChart(table);
             }
         };
@@ -2322,6 +2328,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
                             processK4Results(r);
                         }
                         catch (Exception e) {
+                            e.printStackTrace();
                             JOptionPane.showMessageDialog(frame,
                                                           "\nAn unexpected error occurred whilst communicating with " + server.getHost() + ":" + server.getPort() + "\n\nError detail is\n\n" + e.getMessage() + "\n\n",
                                                           "Studio for kdb+",

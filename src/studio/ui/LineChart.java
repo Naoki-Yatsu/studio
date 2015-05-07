@@ -214,9 +214,22 @@ public class LineChart {
                         series = new XYSeries(table.getColumnName(col));
 
                         for (int row = 0;row < table.getRowCount();row++) {
-                            double x = ((ToDouble) table.getValueAt(row,0)).toDouble();
-                            double y = ((ToDouble) table.getValueAt(row,col)).toDouble();
-                            series.add(x,y);
+                            // check x
+                            K.KBase xBase = (K.KBase) table.getValueAt(row, 0);
+                            double x = ((ToDouble) xBase).toDouble();
+                            if (xBase.isNull() || Double.isInfinite(x)) {
+                                continue;
+                            }
+                            // check y
+                            Object yObject = table.getValueAt(row, col);
+                            if (yObject instanceof K.KBase
+                                    && !((K.KBase) yObject).isNull()
+                                    && yObject instanceof ToDouble) {
+                                double y = ((ToDouble) yObject).toDouble();
+                                if (Double.isFinite(y)) {
+                                    series.add(x, y);
+                                }
+                            }
                         }
                     }
                     catch (SeriesException e) {

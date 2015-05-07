@@ -226,6 +226,14 @@ public class SmartChartManager {
     }
 
     public void createChart(KTableModel table, boolean newFrame) {
+        // check row limit
+        if (!Util.checkItemCountForGraph(table)) {
+            JOptionPane.showMessageDialog(frame, "Over max count limit = " + 
+                    Config.getInstance().getGraphMaxCount() + " (row count * column count). \n" + 
+                    "If you change limit, please set config graph.maxcount.", "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
         chart = ChartDataCreator.createChart(table, setting);
         if (chart != null) {
             if (newFrame) {
