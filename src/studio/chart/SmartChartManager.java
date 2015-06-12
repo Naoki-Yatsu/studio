@@ -8,6 +8,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.PrintWriter;
@@ -63,7 +64,7 @@ public class SmartChartManager {
 
     private static final int PANEL_WIDTH;
     private static final int PANEL_HEIGHT_BASE;
-    private static final int PANEL_HEIGHT_PER_ITEM = 50;
+    private static final int PANEL_HEIGHT_PER_ITEM = 52;
     
     private static final int TEXT_FIELD_COLUMNS_NORMAL = 6;
     private static final int TEXT_FIELD_COLUMNS_LONG = 8;
@@ -81,7 +82,7 @@ public class SmartChartManager {
     // set window size by OS
     static {
         int panelWidthBase = 740;
-        int panelHeightBase = 220;
+        int panelHeightBase = 240;
         if(System.getProperty("os.name","").contains("OS X")){ 
             PANEL_WIDTH = panelWidthBase + 120;
             PANEL_HEIGHT_BASE = panelHeightBase + 40;
@@ -101,7 +102,8 @@ public class SmartChartManager {
     private JPanel settingPanel = new JPanel();
     
     private JFrame chartFrame;
-    private ChartPanel chartPanel;
+    // private ChartPanel chartPanel;
+    private JPanel chartPanel;
     private JFreeChart chart;
     
     private Studio studio;
@@ -114,6 +116,8 @@ public class SmartChartManager {
     
     // Panel
     private JPanel windowPanel = new JPanel();
+    private JPanel windowPanelInner1 = new JPanel();
+    private JPanel windowPanelInner2 = new JPanel();
     private JPanel chartButtonPanel = new JPanel();
     private JPanel yOpenCloseWrapperPanel = new JPanel();    
     private JPanel yOpenClosePanel = new JPanel();
@@ -137,6 +141,9 @@ public class SmartChartManager {
     private JComboBox<ChartTheme> themeCombo = new JComboBox<>(ChartTheme.values());
     private JCheckBox newChartFrameCheckBox = new JCheckBox("New Frame", ChartSetting.NEW_FRAME_DEFAULT);
     private JCheckBox crosshairOverlayCheckBox = new JCheckBox("Cross-hair", ChartSetting.CROSS_HAIR_DEFAULT);
+    private JCheckBox scrollBarCheckBox = new JCheckBox("Scroll", ChartSetting.SCROLL_BAR_DEFAULT);
+    private JCheckBox scrollAdjustRangeCheckBox = new JCheckBox("Scroll Adjust", ChartSetting.SCROLL_ADJUST_DEFAULT);
+    private JTextField scrollMinRangeField = new GuideTextField("Min Range", TEXT_FIELD_COLUMNS_NORMAL);
     
     // Open/Close label
     private JLabel y1Left2Label = new JLabel(" + Y1 Left2");
@@ -246,7 +253,13 @@ public class SmartChartManager {
             } else {
                 chartPanel = new ChartPanel(chart);
             }
-            chartPanel.setMouseZoomable(true, false);
+            ((ChartPanel)chartPanel).setMouseZoomable(true, false);
+            
+            // wrap scroll bar panel
+            if (scrollBarCheckBox.isSelected()) {
+                chartPanel = new ChartScrollPanel((ChartPanel)chartPanel, scrollAdjustRangeCheckBox.isSelected(), scrollMinRangeField.getText());
+                chartFrame.addKeyListener((KeyListener) chartPanel);
+            }
             updateChart();
             
             chartFrame.setContentPane(chartPanel);
@@ -580,10 +593,13 @@ public class SmartChartManager {
         ((GuideTextField) titleField).clearText("");
         ((GuideTextField) xSizeField).clearText(String.valueOf(ChartSetting.WINDOW_X_DEFAULT));
         ((GuideTextField) ySizeField).clearText(String.valueOf(ChartSetting.WINDOW_Y_DEFAULT));
+        themeCombo.setSelectedIndex(0);
         newChartFrameCheckBox.setSelected(ChartSetting.NEW_FRAME_DEFAULT);
         crosshairOverlayCheckBox.setSelected(ChartSetting.CROSS_HAIR_DEFAULT);
-        themeCombo.setSelectedIndex(0);
-        
+        scrollBarCheckBox.setSelected(ChartSetting.SCROLL_BAR_DEFAULT);
+        scrollAdjustRangeCheckBox.setSelected(ChartSetting.SCROLL_ADJUST_DEFAULT);
+        ((GuideTextField) scrollMinRangeField).clearText("");
+
         // Multi
         ((GuideTextField) gapField).clearText("");
         separateLegendCheckBox.setSelected(ChartSetting.SEPARETE_LEGEND_DEFAULT);
@@ -831,6 +847,7 @@ public class SmartChartManager {
 
         settingPanel.add(clearButtonPanel);
         settingPanel.add(windowPanel);
+        settingPanel.add(windowPanelInner2);
         settingPanel.add(xPanel);
         settingPanel.add(y1Panel);
         settingPanel.add(yOpenCloseWrapperPanel);
@@ -860,12 +877,21 @@ public class SmartChartManager {
         multiAxisPanel.add(separateLegendCheckBox);    
         
         // window
-        windowPanel.add(titleField);
-        windowPanel.add(xSizeField);
-        windowPanel.add(ySizeField);
-        windowPanel.add(newChartFrameCheckBox);
-        windowPanel.add(crosshairOverlayCheckBox);
-        windowPanel.add(themeCombo);
+        windowPanel.add(windowPanelInner1);
+        windowPanel.add(windowPanelInner2);
+        
+        // window1
+        windowPanelInner1.add(titleField);
+        windowPanelInner1.add(xSizeField);
+        windowPanelInner1.add(ySizeField);
+        windowPanelInner1.add(themeCombo);
+        windowPanelInner1.add(newChartFrameCheckBox);
+        
+        // window2
+        windowPanelInner2.add(crosshairOverlayCheckBox);
+        windowPanelInner2.add(scrollBarCheckBox);
+        windowPanelInner2.add(scrollAdjustRangeCheckBox);
+        windowPanelInner2.add(scrollMinRangeField);
         
         // Y Open/Close
         yOpenCloseWrapperPanel.add(yOpenClosePanel);
@@ -894,16 +920,16 @@ public class SmartChartManager {
         gbc.insets = new Insets(1, 2, 1, 2);
         gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.weighty = 0.0d;
+        
         gbc.gridx = 0;
         gbc.gridy = 0;
-        
         layout.setConstraints(windowPanel, gbc);
         gbc.gridx = 1;
         gbc.gridheight = 2;
         layout.setConstraints(chartButtonPanel, gbc);
         gbc.gridheight = 1;
-        
         gbc.gridx = 0;
+        
         gbc.gridy++;
         layout.setConstraints(xPanel, gbc);
         gbc.gridy++;
@@ -1020,7 +1046,19 @@ public class SmartChartManager {
         windowPanel.setLayout(layout);
         gbc = new GridBagConstraints();
         gbc.insets = new Insets(1, 2, 1, 2);
+        gbc.anchor = GridBagConstraints.WEST;
         
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        layout.setConstraints(windowPanelInner1, gbc);
+        gbc.gridy++;
+        layout.setConstraints(windowPanelInner2, gbc);
+
+        // window panel 1
+        layout = new GridBagLayout();
+        windowPanelInner1.setLayout(layout);
+        gbc = new GridBagConstraints();
+        gbc.insets = new Insets(1, 2, 1, 2);
         gbc.gridx = 0;
         gbc.gridy = 0;
         layout.setConstraints(titleField, gbc);
@@ -1032,9 +1070,21 @@ public class SmartChartManager {
         layout.setConstraints(themeCombo, gbc);
         gbc.gridx++;
         layout.setConstraints(newChartFrameCheckBox, gbc);
-        gbc.gridx++;
-        layout.setConstraints(crosshairOverlayCheckBox, gbc);
         
+        // window panel 2
+        layout = new GridBagLayout();
+        windowPanelInner2.setLayout(layout);
+        gbc = new GridBagConstraints();
+        gbc.insets = new Insets(1, 2, 1, 2);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        layout.setConstraints(crosshairOverlayCheckBox, gbc);
+        gbc.gridx++;
+        layout.setConstraints(scrollBarCheckBox, gbc);
+        gbc.gridx++;
+        layout.setConstraints(scrollAdjustRangeCheckBox, gbc);
+        gbc.gridx++;
+        layout.setConstraints(scrollMinRangeField, gbc);  
         
         // Map
         axisPanelMap.put(AxisPosition.X1, xPanel);

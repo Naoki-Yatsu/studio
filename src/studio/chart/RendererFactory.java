@@ -1,6 +1,7 @@
 package studio.chart;
 
 import java.awt.Color;
+import java.awt.Shape;
 
 import org.jfree.chart.labels.HighLowItemLabelGenerator;
 import org.jfree.chart.labels.ItemLabelAnchor;
@@ -18,6 +19,7 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.urls.StandardCategoryURLGenerator;
 import org.jfree.chart.urls.StandardXYURLGenerator;
 import org.jfree.ui.TextAnchor;
+import org.jfree.util.ShapeUtilities;
 
 public class RendererFactory {
 
@@ -36,6 +38,8 @@ public class RendererFactory {
                 return createBarChartRenderer(isDateDomainAxis, tooltips, urls);
             case SCATTER:
                 return createScatterChartRenderer(tooltips, urls);
+            case SCATTER_UD:
+                return createScatterUpDownChartRenderer(tooltips, urls);
             case OHLC:
                 CandlestickRenderer candlestickRenderer = new CandlestickRenderer();
                 candlestickRenderer.setAutoWidthGap(5.0);
@@ -85,13 +89,37 @@ public class RendererFactory {
     }
 
     public static XYItemRenderer createScatterChartRenderer(boolean tooltips, boolean urls) {
-        XYItemRenderer renderer = new XYLineAndShapeRenderer(false, true);
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(false, true);
         if (tooltips) {
             renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
         }
         if (urls) {
             renderer.setURLGenerator(new StandardXYURLGenerator());
         }
+        return renderer;
+    }
+    
+    public static XYItemRenderer createScatterUpDownChartRenderer(boolean tooltips, boolean urls) {
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(false, true);
+        if (tooltips) {
+            renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setURLGenerator(new StandardXYURLGenerator());
+        }
+        Shape up = ShapeUtilities.createUpTriangle(4);
+        renderer.setSeriesShape(0, up);
+        Shape down = ShapeUtilities.createDownTriangle(4);
+        renderer.setSeriesShape(1, down);
+        
+        // additional
+        renderer.setSeriesShape(2, up);
+        renderer.setSeriesShape(3, down);
+
+        // renderer.setUseOutlinePaint(true);
+        // renderer.setSeriesOutlinePaint(0, Color.black);
+        // renderer.setSeriesOutlinePaint(1, Color.black);
+
         return renderer;
     }
     
@@ -120,6 +148,7 @@ public class RendererFactory {
                 renderer.setBaseNegativeItemLabelPosition(position2);
                 break;
             case SCATTER:
+            case SCATTER_UD:
                 renderer = new LineAndShapeRenderer(false, true);
                 break;
             default:

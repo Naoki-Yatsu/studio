@@ -20,6 +20,8 @@ public class ChartSetting {
     
     public static final boolean NEW_FRAME_DEFAULT = false;
     public static final boolean CROSS_HAIR_DEFAULT = false;
+    public static final boolean SCROLL_BAR_DEFAULT = true;
+    public static final boolean SCROLL_ADJUST_DEFAULT = true;
     
     public static final double RANGE_DEFAILT = Double.NaN;
     public static final double GAP_DEFAULT = -5.0d;

@@ -215,6 +215,7 @@ public class ChartDataCreator {
                     chart = ChartFactory.createXYBarChart(setting.getTitle(), xSetting.getLabel(), true, ySetting.getLabel(), dataset);
                     break;
                 case SCATTER:
+                case SCATTER_UD:
                     chart = ChartFactory.createScatterPlot(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
                     break;
                 case OHLC:
@@ -244,6 +245,7 @@ public class ChartDataCreator {
                     chart = ChartFactory.createHistogram(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset, PlotOrientation.VERTICAL, true, true, false);
                     break;
                 case SCATTER:
+                case SCATTER_UD:
                     chart = ChartFactory.createScatterPlot(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
                     break;
                 default:
@@ -783,7 +785,7 @@ public class ChartDataCreator {
     private static OHLCDataset convertToOHLCDataset(TimeSeriesCollection tsc) {
         // If name has open/high/low/close, use them for OHLC items
         // If not and count = 4, use 1-open, 2-high, 3-low, 4-close
-        if (tsc.getSeriesCount() != 4) {
+        if (tsc.getSeriesCount() < 4) {
             return null;
         }
         
