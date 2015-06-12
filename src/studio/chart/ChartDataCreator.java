@@ -198,15 +198,20 @@ public class ChartDataCreator {
         ChartAxisSetting xSetting = setting.getAxisSetting(AxisPosition.X1);
         ChartAxisSetting ySetting = setting.getAxisSetting(AxisPosition.Y1);
         
+        ChartType chartType = ySetting.getChartType();
         if (xyDataset instanceof TimeSeriesCollection) {
             TimeSeriesCollection dataset = (TimeSeriesCollection) xyDataset;
-            switch (ySetting.getChartType()) {
+            switch (chartType) {
                 case LINE:
                     chart = ChartFactory.createTimeSeriesChart(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
                     break;
                 case LINE_MARK:
+                case LINE_DT:
                     chart = ChartFactory.createTimeSeriesChart(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
                     ((XYLineAndShapeRenderer) chart.getXYPlot().getRenderer()).setBaseShapesVisible(true);
+                    if (chartType == ChartType.LINE_DT) {
+                        RendererFactory.changeShapeDot(chart.getXYPlot().getRenderer()); 
+                    }
                     break;
                 case BAR:
                     chart = ChartFactory.createXYBarChart(setting.getTitle(), xSetting.getLabel(), true, ySetting.getLabel(), dataset);
@@ -215,7 +220,14 @@ public class ChartDataCreator {
                     chart = ChartFactory.createXYBarChart(setting.getTitle(), xSetting.getLabel(), true, ySetting.getLabel(), dataset);
                     break;
                 case SCATTER:
+                case SCATTER_UD:
+                case SCATTER_DT:
                     chart = ChartFactory.createScatterPlot(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
+                    if (chartType == ChartType.SCATTER_UD) {
+                        RendererFactory.changeShapeArrow((XYLineAndShapeRenderer) chart.getXYPlot().getRenderer()); 
+                    } else if (chartType == ChartType.SCATTER_DT) {
+                        RendererFactory.changeShapeDot(chart.getXYPlot().getRenderer()); 
+                    }
                     break;
                 case OHLC:
                     chart = ChartFactory.createCandlestickChart(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), convertToOHLCDataset(dataset), true);
@@ -229,13 +241,17 @@ public class ChartDataCreator {
 
         } else if (xyDataset instanceof XYSeriesCollection) {
             XYSeriesCollection dataset = (XYSeriesCollection) xyDataset;
-            switch (ySetting.getChartType()) {
+            switch (chartType) {
                 case LINE:
                     chart = ChartFactory.createXYLineChart(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
                     break;
                 case LINE_MARK:
+                case LINE_DT:
                     chart = ChartFactory.createXYLineChart(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
                     ((XYLineAndShapeRenderer) chart.getXYPlot().getRenderer()).setBaseShapesVisible(true);
+                    if (chartType == ChartType.LINE_DT) {
+                        RendererFactory.changeShapeDot(chart.getXYPlot().getRenderer()); 
+                    }
                     break;
                 case BAR:
                     chart = ChartFactory.createXYBarChart(setting.getTitle(), xSetting.getLabel(), false, ySetting.getLabel(), dataset);
@@ -244,7 +260,14 @@ public class ChartDataCreator {
                     chart = ChartFactory.createHistogram(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset, PlotOrientation.VERTICAL, true, true, false);
                     break;
                 case SCATTER:
+                case SCATTER_UD:
+                case SCATTER_DT:
                     chart = ChartFactory.createScatterPlot(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
+                    if (chartType == ChartType.SCATTER_UD) {
+                        RendererFactory.changeShapeArrow((XYLineAndShapeRenderer) chart.getXYPlot().getRenderer()); 
+                    } else if (chartType == ChartType.SCATTER_DT) {
+                        RendererFactory.changeShapeDot(chart.getXYPlot().getRenderer()); 
+                    }
                     break;
                 default:
             }
@@ -302,12 +325,13 @@ public class ChartDataCreator {
         XYPlot xyPlot1 = createXYPlot(xyDatasetList.get(datasetNo), y1LeftSetting.getLabel(), AxisLocation.BOTTOM_OR_LEFT, 
                     RendererFactory.createXYItemRenderer(y1LeftSetting.getChartType(), isDateDomainAxis), y1LeftSetting.isIncludeZero());
         datasetNo++;
-        // Y1 left2, right
+        // Y1 left2
         if (setting.isY1Left2Enable()) {
             addDatasetToPlotMapAxis(xyPlot1, 2, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT, RendererFactory.
                     createXYItemRenderer(setting.getAxisSetting(AxisPosition.Y1_LEFT2).getChartType(), isDateDomainAxis));
             datasetNo++;
         }
+        // Y1 right
         if (setting.isY1RightEnable()) {
             ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y1_RIGHT);
             addDatasetToPlot(xyPlot1, 1, xyDatasetList.get(datasetNo), rightSetting.getLabel(), AxisLocation.BOTTOM_OR_RIGHT, 
@@ -405,6 +429,9 @@ public class ChartDataCreator {
         return plot;
     }
 
+    /**
+     * Add dataset to plot using "new" axis
+     */
     private static void addDatasetToPlot(XYPlot plot, int index, XYDataset dataset, String label, AxisLocation location, XYItemRenderer renderer, boolean includeZero) {
         plot.setDataset(index, dataset);
         NumberAxis numberAxis = new NumberAxis(label);
@@ -416,6 +443,9 @@ public class ChartDataCreator {
         plot.setRangePannable(true);
     }
     
+    /**
+     * Add dataset to plot using "existing" axis
+     */
     private static void addDatasetToPlotMapAxis(XYPlot plot, int index, int rangeAxis, XYDataset dataset, AxisLocation location, XYItemRenderer renderer) {
         plot.setDataset(index, dataset);
         plot.setRangeAxisLocation(index, location);
@@ -425,10 +455,6 @@ public class ChartDataCreator {
     
     /**
      * Create composite title of left-right separated.
-     * 
-     * @param source1
-     * @param source2
-     * @return
      */
     private static void addSepareteLegendTitle(JFreeChart chart) {
         // regtend items
@@ -783,7 +809,7 @@ public class ChartDataCreator {
     private static OHLCDataset convertToOHLCDataset(TimeSeriesCollection tsc) {
         // If name has open/high/low/close, use them for OHLC items
         // If not and count = 4, use 1-open, 2-high, 3-low, 4-close
-        if (tsc.getSeriesCount() != 4) {
+        if (tsc.getSeriesCount() < 4) {
             return null;
         }
         
