@@ -148,7 +148,6 @@ public class SmartChartManager {
     private JCheckBox scrollAdjustRangeCheckBox = new JCheckBox("Scroll Adjust", ChartSetting.SCROLL_ADJUST_DEFAULT);
     private JTextField scrollMinRangeField = new GuideTextField("Min Range", TEXT_FIELD_COLUMNS_NORMAL);
     
-    
     // Open/Close label
     private JLabel y1Left2Label = new JLabel(" + Y1 Left2");
     private JLabel y1RightLabel = new JLabel(" + Y1 Right");

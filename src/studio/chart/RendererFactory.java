@@ -132,6 +132,7 @@ public class RendererFactory {
         renderer.setSeriesShape(5, down);
 
         renderer.setUseOutlinePaint(true);
+
         // renderer.setSeriesOutlinePaint(0, Color.black);
         // renderer.setSeriesOutlinePaint(1, Color.black);
 
@@ -182,7 +183,7 @@ public class RendererFactory {
         p0.closePath();
         return p0;
     }
-    
+
     /**
      * Category
      * @param chartType

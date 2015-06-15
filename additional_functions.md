@@ -51,6 +51,7 @@ This version is able to create multi-axis chart.
 Line, Line-Marker, Bar, Scatter and OHLC. (Bar-Density is not implemented yet.)
 * Show corss-hair for first item for each Y-axis.
 * Show horizontal and vertical line for X-Y axis.
+* Scroll with zoom-in.
 
 ![alt tag](https://raw.githubusercontent.com/Naoki-Yatsu/studio/master/meta/console_guide.png)
 
