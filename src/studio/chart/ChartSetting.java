@@ -70,7 +70,16 @@ public class ChartSetting {
      */
     public int getDatasetCount() {
         int datasetCount = 1;
+        if (isY1Left1Enable()) {
+            datasetCount++;
+        }
         if (isY1Left2Enable()) {
+            datasetCount++;
+        }
+        if (isY1Left3Enable()) {
+            datasetCount++;
+        }
+        if (isY1Left4Enable()) {
             datasetCount++;
         }
         if (isY1RightEnable()) {
@@ -117,8 +126,17 @@ public class ChartSetting {
      * 
      * @return
      */
+    public boolean isY1Left1Enable() {
+        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y1_LEFT1).getColumnName()) ? false : true;
+    }
     public boolean isY1Left2Enable() {
         return StringUtils.isBlank(getAxisSetting(AxisPosition.Y1_LEFT2).getColumnName()) ? false : true;
+    }
+    public boolean isY1Left3Enable() {
+        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y1_LEFT3).getColumnName()) ? false : true;
+    }
+    public boolean isY1Left4Enable() {
+        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y1_LEFT4).getColumnName()) ? false : true;
     }
 
     public boolean isY1RightEnable() {
