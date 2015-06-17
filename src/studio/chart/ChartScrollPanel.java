@@ -1,6 +1,7 @@
 package studio.chart;
 
 import java.awt.BorderLayout;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseWheelEvent;
@@ -132,28 +133,38 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
         if (plot.getDomainAxis().isAutoRange()) {
             return;
         }
+        
+        // increment for cursor, down/right or up/left
+        double cursorIncrement = ChartScrollBar.SCROLL_INCREMENT_SMALL;
+        
+        // shift or ctrl mask
+        int mod = e.getModifiersEx();
+        if ((mod & InputEvent.SHIFT_DOWN_MASK) != 0 || (mod & InputEvent.CTRL_DOWN_MASK) != 0) {
+            // mask on, use large scroll
+            cursorIncrement = ChartScrollBar.SCROLL_INCREMENT_LARGE;
+        }
 
         switch (e.getKeyCode()) {
             case KeyEvent.VK_UP:
-                scrollBarY.incrementScroll(false, true);
+                scrollBarY.incrementScroll(false, cursorIncrement);
                 break;
             case KeyEvent.VK_DOWN:
-                scrollBarY.incrementScroll(true, true);
+                scrollBarY.incrementScroll(true, cursorIncrement);
                 break;
             case KeyEvent.VK_LEFT:
-                scrollBarX.incrementScroll(false, true);
+                scrollBarX.incrementScroll(false, cursorIncrement);
                 adjustRangeAxis();
                 break;
             case KeyEvent.VK_RIGHT:
-                scrollBarX.incrementScroll(true, true);
+                scrollBarX.incrementScroll(true, cursorIncrement);
                 adjustRangeAxis();
                 break;
             case KeyEvent.VK_PAGE_UP:
-                scrollBarX.incrementScroll(true, false);
+                scrollBarX.incrementScroll(true, ChartScrollBar.SCROLL_INCREMENT_PAGE);
                 adjustRangeAxis();
                 break;
             case KeyEvent.VK_PAGE_DOWN:
-                scrollBarX.incrementScroll(false, false);
+                scrollBarX.incrementScroll(false, ChartScrollBar.SCROLL_INCREMENT_PAGE);
                 adjustRangeAxis();
                 break;
             default:
@@ -181,19 +192,19 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
         if (e.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL) {
             // System.out.println("WHEEL_UNIT_SCROLL");
             if (e.getWheelRotation() > 0) {
-                scrollBarX.incrementScroll(true, true);
+                scrollBarX.incrementScroll(true, ChartScrollBar.SCROLL_INCREMENT_LARGE);
                 adjustRangeAxis();
             } else if (e.getWheelRotation() < 0)  {
-                scrollBarX.incrementScroll(false, true);
+                scrollBarX.incrementScroll(false, ChartScrollBar.SCROLL_INCREMENT_LARGE);
                 adjustRangeAxis();
             }
 
         } else if (e.getScrollType() == MouseWheelEvent.WHEEL_BLOCK_SCROLL) {
             // System.out.println("WHEEL_BLOCK_SCROLL");
             if (e.getWheelRotation() > 0) {
-                scrollBarX.incrementScroll(true, false);
+                scrollBarX.incrementScroll(true, ChartScrollBar.SCROLL_INCREMENT_PAGE);
             } else if (e.getWheelRotation() < 0)  {
-                scrollBarX.incrementScroll(false, false);
+                scrollBarX.incrementScroll(false, ChartScrollBar.SCROLL_INCREMENT_PAGE);
             }
         }
     }
@@ -234,7 +245,7 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
         // new range for range axis
         double rangeMin = rangeMinList.subList(lowerIndex, upperIndex + 1).stream().mapToDouble(d -> d).min().getAsDouble();
         double rangeMax = rangeMaxList.subList(lowerIndex, upperIndex + 1).stream().mapToDouble(d -> d).max().getAsDouble();
-        double margin = (rangeMax - rangeMin) * 0.05;
+        double margin = (rangeMax - rangeMin) * 0.03;
         
         rangeMin = rangeMin - margin;
         rangeMax = rangeMax + margin;

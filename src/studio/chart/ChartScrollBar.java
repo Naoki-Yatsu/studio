@@ -24,12 +24,20 @@ public class ChartScrollBar extends JScrollBar implements AdjustmentListener, Ax
     // Filed
     // //////////////////////////////////////
     
-    private XYPlot plot;
+    /** scroll increment ratio */
+    public static final double SCROLL_INCREMENT_PAGE = 1.0;
+    public static final double SCROLL_INCREMENT_LARGE = 0.1;
+    public static final double SCROLL_INCREMENT_SMALL = 0.02;
 
-    private boolean updating = false;
-
+    /** bar size */
     private static final int BAR_MIN = 0;
     private static final int BAR_MAX = 1000000;
+
+    /** Plot */
+    private XYPlot plot;
+
+    /** flag in updating */
+    private boolean updating = false;
     
     private double axisDataMin;
     private double axisDataMax;
@@ -108,31 +116,35 @@ public class ChartScrollBar extends JScrollBar implements AdjustmentListener, Ax
         // check updating
         if (updating) {
             return;
-        } else {
+        }
+        
+        // Update
+        try {
             updating = true;
-        }
-
-        // update view length
-        Range dataRange = getValueAxis().getRange();
-        viewLength = dataRange.getLength();
-        axisViewMin = dataRange.getLowerBound();
-        axisViewMax = dataRange.getUpperBound();
-    
-        int barExtent = (int) (viewLength * barAxisRatio);
-        int barValue;
-        if (orientation == VERTICAL) {
-            barValue = (int) ((axisDataMax - axisViewMax) * barAxisRatio);
-        } else {
-            barValue = (int) ((axisViewMin - axisDataMin) * barAxisRatio);
-        }
-        // System.out.println("ChartScrollBar.axisUpdate(): newValue: " + barValue + " newExtent: " + barExtent + " newMin: " + BAR_MIN + " newMax: " + BAR_MAX);
-        setValues(barValue, barExtent, BAR_MIN, BAR_MAX);
+            
+            // update view length
+            Range dataRange = getValueAxis().getRange();
+            viewLength = dataRange.getLength();
+            axisViewMin = dataRange.getLowerBound();
+            axisViewMax = dataRange.getUpperBound();
         
-        // update increment
-        setUnitIncrement(barExtent/10);
-        setBlockIncrement(barExtent);
-        
-        updating = false;
+            int barExtent = (int) (viewLength * barAxisRatio);
+            int barValue;
+            if (orientation == VERTICAL) {
+                barValue = (int) ((axisDataMax - axisViewMax) * barAxisRatio);
+            } else {
+                barValue = (int) ((axisViewMin - axisDataMin) * barAxisRatio);
+            }
+            // System.out.println("ChartScrollBar.axisUpdate(): newValue: " + barValue + " newExtent: " + barExtent + " newMin: " + BAR_MIN + " newMax: " + BAR_MAX);
+            setValues(barValue, barExtent, BAR_MIN, BAR_MAX);
+            
+            // update increment
+            setUnitIncrement(barExtent/10);
+            setBlockIncrement(barExtent);
+            
+        } finally {
+            updating = false;
+        }
     }
 
     public void axisChanged(AxisChangeEvent event) {
@@ -149,24 +161,29 @@ public class ChartScrollBar extends JScrollBar implements AdjustmentListener, Ax
         // check updating
         if (updating) {
             return;
-        } else {
+        }
+        
+        // Update
+        try {
             updating = true;
-        }
 
-        double lower = 0;
-        double upper = 0;
-        if (orientation == VERTICAL) {
-            upper = axisDataMax - (getValue() / barAxisRatio);
-            lower = upper - viewLength;
-        } else {
-            lower = getValue() / barAxisRatio + axisDataMin;
-            upper = lower + viewLength;
+            double lower = 0;
+            double upper = 0;
+            if (orientation == VERTICAL) {
+                upper = axisDataMax - (getValue() / barAxisRatio);
+                lower = upper - viewLength;
+            } else {
+                lower = getValue() / barAxisRatio + axisDataMin;
+                upper = lower + viewLength;
+            }
+    
+            if (upper > lower) {
+                getValueAxis().setRange(lower, upper);
+            }
+            
+        } finally {
+            updating = false;
         }
-
-        if (upper > lower) {
-            getValueAxis().setRange(lower, upper);
-        }
-        updating = false;
     }
 
     // //////////////////////////////////////
@@ -184,33 +201,33 @@ public class ChartScrollBar extends JScrollBar implements AdjustmentListener, Ax
     }
     
     public void mouseEntered(MouseEvent e) {
+        // do nothing
     }
 
     public void mouseExited(MouseEvent e) {
+        // do nothing
     }
 
     public void mousePressed(MouseEvent e) {
+        // do nothing
     }
 
     public void mouseReleased(MouseEvent e) {
+        // do nothing
     }
 
     /**
      * scroll with mouse wheel or cursor key
      * 
      * @param isDownOrRight 
-     * @param isCursor ture:cursor, false:page
+     * @param incrementRatio
      */
-    public void incrementScroll(boolean isDownOrRight, boolean isCursor) {
-        int newValue = 0;
-        int incrementValue = 0;
-        // cursor or page
-        if (isCursor) {
-            incrementValue = getModel().getExtent()/10;
-        } else {
-            incrementValue = getModel().getExtent();
-        }
+    public void incrementScroll(boolean isDownOrRight, double incrementRatio) {
+        // increment value = extent * ratio
+        int incrementValue = (int) (getModel().getExtent() * incrementRatio);
+        
         // up/left or down/right
+        int newValue = 0;
         if (isDownOrRight) {
             newValue = getValue() + incrementValue;
         } else {
