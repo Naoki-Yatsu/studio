@@ -7,13 +7,16 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 
-import org.apache.commons.lang3.math.NumberUtils;
 import org.jfree.chart.ChartPanel;
+import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.Range;
@@ -33,30 +36,41 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
     
     /** chart panel */
     private ChartPanel chartPanel;
-    private XYPlot plot;
     
     private boolean autoScrollRange;
-    private double minAutoRange = 0.0;
+    private List<Double> rangeLengthList = new ArrayList<>();
     
     /** scroll bar*/
     private ChartScrollBar scrollBarX;
     private ChartScrollBar scrollBarY;
     
+    /** Plot */
+    private List<XYPlot> plots;
+    
+    /** Range Axis */
+    private ValueAxis domainAxis;
+    private Map<Integer, ValueAxis> rangeAxisMap = new HashMap<>();
+    
     /** values list */
-    private List<Double> domainList = new ArrayList<>();
-    private List<Double> rangeMinList = new ArrayList<>();
-    private List<Double> rangeMaxList = new ArrayList<>();
+    private Map<Integer, List<List<Double>>> domainValuesListMap = new HashMap<>();
+    private Map<Integer, List<List<Double>>> rangeValuesListMap = new HashMap<>();
+    
     
     // //////////////////////////////////////
     // Constructor
     // //////////////////////////////////////
     
     @SuppressWarnings("unchecked")
-    public ChartScrollPanel(ChartPanel chartPanel, boolean autoScrollRange, String minAutoRangeStr) {
+    public ChartScrollPanel(ChartPanel chartPanel, boolean autoScrollRange, List<Double> scrollRangeLengthList) {
         this.chartPanel = chartPanel;
         this.autoScrollRange = autoScrollRange;
-        if (NumberUtils.isNumber(minAutoRangeStr)) {
-            this.minAutoRange = Double.valueOf(minAutoRangeStr);
+        
+        for (Double length : scrollRangeLengthList) {
+            if (!Double.isNaN(length)) {
+                rangeLengthList.add(length);
+            } else {
+                rangeLengthList.add(0.0);
+            }
         }
         
         setLayout(new BorderLayout());
@@ -64,64 +78,95 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
         addMouseWheelListener(this);
         
         // plot
-        this.plot = chartPanel.getChart().getXYPlot();
-        if (chartPanel.getChart().getXYPlot() instanceof CombinedDomainXYPlot) {
-            List<XYPlot> plots = ((CombinedDomainXYPlot) plot).getSubplots();
-            this.plot = plots.get(0);
+        XYPlot plot = chartPanel.getChart().getXYPlot();
+        domainAxis = plot.getDomainAxis();
+        // CombinedDomainXYPlot
+        if (plot instanceof CombinedDomainXYPlot) {
+            this.plots = ((CombinedDomainXYPlot) plot).getSubplots();
+        } else {
+            this.plots = new ArrayList<>();
+            plots.add(plot);
         }
         
         // scroll X
-        this.scrollBarX = new ChartScrollBar(JScrollBar.HORIZONTAL, plot);
+        this.scrollBarX = new ChartScrollBar(JScrollBar.HORIZONTAL, plots);
         add(scrollBarX, BorderLayout.SOUTH);
         
         // scroll Y 
-        this.scrollBarY = new ChartScrollBar(JScrollBar.VERTICAL, plot);
+        this.scrollBarY = new ChartScrollBar(JScrollBar.VERTICAL, plots);
         add(scrollBarY, BorderLayout.EAST);
         
-        setupViewRangeForRangeAxis();
-    }
-
-    /**
-     * setup value list for auto scroll
-     */
-    public void setupViewRangeForRangeAxis() {
-        if (!autoScrollRange) {
-            return;
+        // setup data range for auto scroll (VERTICAL only)
+        if (autoScrollRange) {
+            int axisIndex = 0;
+            for (XYPlot xyPlot : plots) {
+                rangeAxisMap.put(axisIndex, xyPlot.getRangeAxis());
+                setupViewRangeForRangeAxis(axisIndex, xyPlot.getDataset());
+                // for Y1 Left-N
+                // data count without right axis
+                int dataCount = xyPlot.getDatasetCount();
+                if (xyPlot.getRangeAxisCount() >= 2) {
+                    dataCount--;
+                }
+                for (int i = 2; i < dataCount + 1; i++) {
+                    setupViewRangeForRangeAxis(axisIndex, xyPlot.getDataset(i));
+                }
+                axisIndex++;
+                
+                // Right Axis
+                if (xyPlot.getRangeAxisCount() >= 2) {
+                    rangeAxisMap.put(axisIndex, xyPlot.getRangeAxis(1));
+                    setupViewRangeForRangeAxis(axisIndex, xyPlot.getDataset(1));
+                    axisIndex++;
+                }
+            }
         }
-        
-        XYDataset dataset = plot.getDataset();
-        int series = dataset.getSeriesCount();
+    }
+    
+    private void setupViewRangeForRangeAxis(Integer axisIndex, XYDataset dataset) {
+        if (!domainValuesListMap.containsKey(axisIndex)) {
+            domainValuesListMap.put(axisIndex, new ArrayList<>());
+        }
+        if (!rangeValuesListMap.containsKey(axisIndex)) {
+            rangeValuesListMap.put(axisIndex, new ArrayList<>());
+        }
+        List<List<Double>> domainValuesList = domainValuesListMap.get(axisIndex);
+        List<List<Double>> rangeValuesList = rangeValuesListMap.get(axisIndex);
 
         if (dataset instanceof OHLCSeriesCollection) {
             // For OHLC
+            List<Double> domainList = new ArrayList<>();
+            List<Double> rangeListHigh = new ArrayList<>();
+            List<Double> rangeListLow = new ArrayList<>();
+            // add domain twice for high/low
+            domainValuesList.add(domainList);
+            domainValuesList.add(domainList);
+            rangeValuesList.add(rangeListHigh);
+            rangeValuesList.add(rangeListLow);
+            
             OHLCSeriesCollection ohlcDataset = (OHLCSeriesCollection) dataset;
             for (int itemIndex = 0; itemIndex < ohlcDataset.getItemCount(0); itemIndex++) {
-                rangeMinList.add(ohlcDataset.getLowValue(0, itemIndex));
-                rangeMaxList.add(ohlcDataset.getHighValue(0, itemIndex));
                 domainList.add(dataset.getXValue(0, itemIndex));
+                rangeListHigh.add(ohlcDataset.getHighValue(0, itemIndex));
+                rangeListLow.add(ohlcDataset.getLowValue(0, itemIndex));
             }
-            
+
         } else {
-            for (int itemIndex = 0; itemIndex < dataset.getItemCount(0); itemIndex++) {
-                double minValue = dataset.getYValue(0, itemIndex);
-                double maxValue = dataset.getYValue(0, itemIndex);
-                // min/max in series
-                for (int seriesIndex = 1; seriesIndex < series; seriesIndex++) {
-                    // some series have less count.
-                    if (itemIndex >= dataset.getItemCount(seriesIndex)) {
-                        continue;
-                    }
-                    minValue = Math.min(minValue, dataset.getYValue(seriesIndex, itemIndex));
-                    maxValue = Math.max(maxValue, dataset.getYValue(seriesIndex, itemIndex));
-                }
-                rangeMinList.add(minValue);
-                rangeMaxList.add(maxValue);
+            // For XYSeriesCollection, TimeSeriesCollection
+            for (int series = 0; series < dataset.getSeriesCount(); series++) {
+                List<Double> domainList = new ArrayList<>();
+                List<Double> rangeList = new ArrayList<>();
+                domainValuesList.add(domainList);
+                rangeValuesList.add(rangeList);
                 
-                domainList.add(dataset.getXValue(0, itemIndex));
+                // value list for series
+                for (int item = 0; item < dataset.getItemCount(series); item++) {
+                    domainList.add(dataset.getXValue(series, item));
+                    rangeList.add(dataset.getYValue(series, item));
+                }
             }
         }
     }
-        
     
     // //////////////////////////////////////
     // Method (Listener)
@@ -130,13 +175,13 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
     @Override
     public void keyPressed(KeyEvent e) {
         // System.out.println("### keyPressed");
-        if (plot.getDomainAxis().isAutoRange()) {
+        if (domainAxis.isAutoRange()) {
             return;
         }
-        
+
         // increment for cursor, down/right or up/left
         double cursorIncrement = ChartScrollBar.SCROLL_INCREMENT_SMALL;
-        
+
         // shift or ctrl mask
         int mod = e.getModifiersEx();
         if ((mod & InputEvent.SHIFT_DOWN_MASK) != 0 || (mod & InputEvent.CTRL_DOWN_MASK) != 0) {
@@ -176,25 +221,25 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
     public void keyReleased(KeyEvent e) {
         // do nothing
     }
-    
+
     @Override
     public void keyTyped(KeyEvent e) {
         // do nothing
     }
-    
+
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
         // scroll X
-        if (plot.getDomainAxis().isAutoRange()) {
+        if (domainAxis.isAutoRange()) {
             return;
         }
-        
+
         if (e.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL) {
             // System.out.println("WHEEL_UNIT_SCROLL");
             if (e.getWheelRotation() > 0) {
                 scrollBarX.incrementScroll(true, ChartScrollBar.SCROLL_INCREMENT_LARGE);
                 adjustRangeAxis();
-            } else if (e.getWheelRotation() < 0)  {
+            } else if (e.getWheelRotation() < 0) {
                 scrollBarX.incrementScroll(false, ChartScrollBar.SCROLL_INCREMENT_LARGE);
                 adjustRangeAxis();
             }
@@ -203,12 +248,12 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
             // System.out.println("WHEEL_BLOCK_SCROLL");
             if (e.getWheelRotation() > 0) {
                 scrollBarX.incrementScroll(true, ChartScrollBar.SCROLL_INCREMENT_PAGE);
-            } else if (e.getWheelRotation() < 0)  {
+            } else if (e.getWheelRotation() < 0) {
                 scrollBarX.incrementScroll(false, ChartScrollBar.SCROLL_INCREMENT_PAGE);
             }
         }
     }
-    
+
     // //////////////////////////////////////
     // Method
     // //////////////////////////////////////
@@ -216,47 +261,64 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
     public ChartPanel getChartPanel() {
         return chartPanel;
     }
-    
-    public void adjustRangeAxis() {
+
+    /**
+     * Adjust Range for scroll
+     */
+    private void adjustRangeAxis() {
         if (!autoScrollRange) {
             return;
         }
-        
-        // search domain indices
-        int lowerIndex = 0;
-        int upperIndex = 0;
-        Range domainRange = plot.getDomainAxis().getRange();
-        
-        // lower
-        for (int i = 0; i < domainList.size(); i++) {
-            if (domainList.get(i) > domainRange.getLowerBound()) {
-                break;
-            }
-            lowerIndex = i;
+        for (Integer axisIndex : rangeAxisMap.keySet()) {
+            adjustRangeAxis(axisIndex);
         }
-        // upper
-        for (int i = lowerIndex; i < domainList.size(); i++) {
-            upperIndex = i;
-            if (domainList.get(i) > domainRange.getUpperBound()) {
-                break;
-            }
-        }
+    }
+
+    private void adjustRangeAxis(Integer axisIndex) {
+        List<List<Double>> domainValuesList = domainValuesListMap.get(axisIndex);
+        List<List<Double>> rangeValuesList = rangeValuesListMap.get(axisIndex);
+
+        Range domainRange = domainAxis.getRange();
+        double rangeMin = Double.MAX_VALUE;
+        double rangeMax = Double.MIN_VALUE;
         
-        // new range for range axis
-        double rangeMin = rangeMinList.subList(lowerIndex, upperIndex + 1).stream().mapToDouble(d -> d).min().getAsDouble();
-        double rangeMax = rangeMaxList.subList(lowerIndex, upperIndex + 1).stream().mapToDouble(d -> d).max().getAsDouble();
+
+        for (int i = 0; i < domainValuesList.size(); i++) {
+            List<Double> domainList = domainValuesList.get(i);
+            List<Double> rangeList = rangeValuesList.get(i);
+
+            // search domain indices
+            int lowerIndex = Collections.binarySearch(domainList, domainRange.getLowerBound());
+            int upperIndex = Collections.binarySearch(domainList, domainRange.getUpperBound());
+            lowerIndex = lowerIndex >= 0 ? lowerIndex : -lowerIndex - 2;
+            upperIndex = upperIndex >= 0 ? upperIndex : -upperIndex - 1;
+
+            // new range for range axis
+            double rangeMinTemp = Collections.min(rangeList.subList(Math.max(0, lowerIndex), Math.min(rangeList.size(), upperIndex + 1)));
+            double rangeMaxTemp = Collections.max(rangeList.subList(Math.max(0, lowerIndex), Math.min(rangeList.size(), upperIndex + 1)));
+
+            rangeMin = Math.min(rangeMin, rangeMinTemp);
+            rangeMax = Math.max(rangeMax, rangeMaxTemp);
+        }
+
+        // Margin
         double margin = (rangeMax - rangeMin) * 0.03;
-        
         rangeMin = rangeMin - margin;
         rangeMax = rangeMax + margin;
+
         
-        if (rangeMax - rangeMin < minAutoRange) {
-            double additional = (minAutoRange - (rangeMax - rangeMin)) / 2;
+        // minimum length
+        double minLength = rangeLengthList.get(axisIndex);
+        if (rangeMax - rangeMin < minLength) {
+            double additional = (minLength - (rangeMax - rangeMin)) / 2;
             rangeMin = rangeMin - additional;
             rangeMax = rangeMax + additional;
         }
-        
-        scrollBarY.adjustRange(rangeMin - margin, rangeMax + margin);
+
+        // if it has positive range, set new range
+        if (Double.compare(rangeMin, rangeMax) < 0) {
+            rangeAxisMap.get(axisIndex).setRange(rangeMin, rangeMax);
+        }
     }
-    
+ 
 }

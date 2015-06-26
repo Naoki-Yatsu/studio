@@ -25,12 +25,12 @@ public abstract class AddtionalAxisPanel extends JPanel {
     
     protected String itemName;
     protected AxisPosition axisPosition;
-    protected Color color;
+    protected Color panelColor;
     
-    public AddtionalAxisPanel(String itemName, AxisPosition axisPosition, Color color) {
+    public AddtionalAxisPanel(String itemName, AxisPosition axisPosition, Color panelColor) {
         this.itemName = itemName;
         this.axisPosition = axisPosition;
-        this.color = color;
+        this.panelColor = panelColor;
     }
     
     public abstract void clearSetting();
@@ -38,7 +38,7 @@ public abstract class AddtionalAxisPanel extends JPanel {
     public abstract void setupColumnNameCombo(List<String> items );
 
     /**
-     * Set backgroud color to TitledBorder 
+     * Set background color to TitledBorder 
      * @param border
      * @param color
      */
@@ -65,14 +65,16 @@ public abstract class AddtionalAxisPanel extends JPanel {
     public static class AddtionalAxisPanelDefault extends AddtionalAxisPanel {
         private static final long serialVersionUID = 1L;
         
-        protected JTextField labelField = new GuideTextField("Label", SmartChartManager.TEXT_FIELD_COLUMNS_LONG);
-        protected JTextField minField = new GuideTextField("Min", SmartChartManager.TEXT_FIELD_COLUMNS_NORMAL);
-        protected JTextField maxField = new GuideTextField("Max", SmartChartManager.TEXT_FIELD_COLUMNS_NORMAL);
+        protected JTextField labelField = new GuideTextField("Label", SmartChartPanel.TEXT_FIELD_COLUMNS_LONG);
+        protected JTextField minField = new GuideTextField("Min", SmartChartPanel.TEXT_FIELD_COLUMNS_NORMAL);
+        protected JTextField maxField = new GuideTextField("Max", SmartChartPanel.TEXT_FIELD_COLUMNS_NORMAL);
+        protected JTextField lengthField = new GuideTextField("Min Length", SmartChartPanel.TEXT_FIELD_COLUMNS_NORMAL);
         protected JCheckBox includeZeroCheckbox = new JCheckBox("Inc. 0", false);
-        protected JTextField markerLineField = new GuideTextField("Markers(,)", SmartChartManager.TEXT_FIELD_COLUMNS_NORMAL);
+        protected JTextField markerLineField = new GuideTextField("Markers(,)", SmartChartPanel.TEXT_FIELD_COLUMNS_NORMAL);
         protected JComboBox<ChartType> chartCombo = new JComboBox<>(ChartType.values());
-        protected JComboBox<String> columnNameCombo = new JComboBox<>(new String[]{SmartChartManager.DEFAULT_COLUMN_NAME});
-        protected JTextField weightField = new GuideTextField("weight", "1", SmartChartManager.TEXT_FIELD_COLUMNS_SHORT);
+        protected JComboBox<String> columnNameCombo = new JComboBox<>(new String[]{SmartChartPanel.DEFAULT_COLUMN_NAME});
+        protected JComboBox<Color> colorCombo = new JComboBox<>(SeriesColor.COLORS);
+        protected JTextField weightField = new GuideTextField("weight", "1", SmartChartPanel.TEXT_FIELD_COLUMNS_SHORT);
         
         public AddtionalAxisPanelDefault(String itemName, AxisPosition axisPosition, Color color) {
             super(itemName, axisPosition, color);
@@ -80,19 +82,27 @@ public abstract class AddtionalAxisPanel extends JPanel {
             // Component
             chartCombo.setPreferredSize(new Dimension(100, 25));
             columnNameCombo.setPreferredSize(new Dimension(120, 25));
+            colorCombo.setPreferredSize(new Dimension(80, 25));
             if (axisPosition == AxisPosition.X1) {
-                minField = new GuideTextField("Min", SmartChartManager.TEXT_FIELD_COLUMNS_LONGLONG);
-                maxField = new GuideTextField("Max", SmartChartManager.TEXT_FIELD_COLUMNS_LONGLONG);
+                minField = new GuideTextField("Min", SmartChartPanel.TEXT_FIELD_COLUMNS_LONGLONG);
+                maxField = new GuideTextField("Max", SmartChartPanel.TEXT_FIELD_COLUMNS_LONGLONG);
+                lengthField = new GuideTextField("Domain Length", SmartChartPanel.TEXT_FIELD_COLUMNS_LONGLONG);
             }
+            
+            // chartCombo.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+            // columnNameCombo.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+            // colorCombo.setFont(new Font("Arial", Font.PLAIN, 11));
             
             // initialize panel
             this.add(labelField);
             this.add(minField);
             this.add(maxField);
+            this.add(lengthField);
             this.add(includeZeroCheckbox);
             this.add(markerLineField);
             this.add(chartCombo);
             this.add(columnNameCombo);
+            this.add(colorCombo);
             this.add(weightField);
             
             // panel layout
@@ -115,6 +125,8 @@ public abstract class AddtionalAxisPanel extends JPanel {
             gbc.gridx++;
             layout.setConstraints(maxField, gbc);
             gbc.gridx++;
+            layout.setConstraints(lengthField, gbc);
+            gbc.gridx++;
             layout.setConstraints(includeZeroCheckbox, gbc);
             gbc.gridx++;
             layout.setConstraints(markerLineField, gbc);
@@ -122,6 +134,8 @@ public abstract class AddtionalAxisPanel extends JPanel {
             layout.setConstraints(chartCombo, gbc);
             gbc.gridx++;
             layout.setConstraints(columnNameCombo, gbc);
+            gbc.gridx++;
+            layout.setConstraints(colorCombo, gbc);
             gbc.gridx++;
             layout.setConstraints(weightField, gbc);
         }
@@ -131,11 +145,13 @@ public abstract class AddtionalAxisPanel extends JPanel {
             ((GuideTextField) labelField).clearText("");
             ((GuideTextField) minField).clearText("");
             ((GuideTextField) maxField).clearText("");
+            ((GuideTextField) lengthField).clearText("");
             includeZeroCheckbox.setSelected(false);
             ((GuideTextField) markerLineField).clearText("");
             chartCombo.setSelectedIndex(0);
             columnNameCombo.removeAllItems();
-            columnNameCombo.addItem(SmartChartManager.DEFAULT_COLUMN_NAME);
+            columnNameCombo.addItem(SmartChartPanel.DEFAULT_COLUMN_NAME);
+            colorCombo.setSelectedIndex(0);
             ((GuideTextField) weightField).clearText("1");
         }
         
@@ -162,22 +178,27 @@ public abstract class AddtionalAxisPanel extends JPanel {
     public static class AddtionalAxisPanelY1Left extends AddtionalAxisPanel {
         protected static final long serialVersionUID = 1L;
         
-        private static final JLabel BLANK_LABEL = new JLabel("       ");
+        private static final JLabel BLANK_LABEL = new JLabel("     ");
         
-        protected JLabel label1 = new JLabel(" Y1 Left-1 ");
-        protected JLabel label2 = new JLabel(" Y1 Left-2 ");
-        protected JLabel label3 = new JLabel(" Y1 Left-3 ");
-        protected JLabel label4 = new JLabel(" Y1 Left-4 ");
+        protected JLabel label1 = new JLabel(" Left-1 ");
+        protected JLabel label2 = new JLabel(" Left-2 ");
+        protected JLabel label3 = new JLabel(" Left-3 ");
+        protected JLabel label4 = new JLabel(" Left-4 ");
         
         protected JComboBox<ChartType> chartCombo1 = new JComboBox<>(ChartType.values());
         protected JComboBox<ChartType> chartCombo2 = new JComboBox<>(ChartType.values());
         protected JComboBox<ChartType> chartCombo3 = new JComboBox<>(ChartType.values());
         protected JComboBox<ChartType> chartCombo4 = new JComboBox<>(ChartType.values());
 
-        protected JComboBox<String> columnNameCombo1 = new JComboBox<>(new String[]{SmartChartManager.DEFAULT_COLUMN_NAME});
-        protected JComboBox<String> columnNameCombo2 = new JComboBox<>(new String[]{SmartChartManager.DEFAULT_COLUMN_NAME});
-        protected JComboBox<String> columnNameCombo3 = new JComboBox<>(new String[]{SmartChartManager.DEFAULT_COLUMN_NAME});
-        protected JComboBox<String> columnNameCombo4 = new JComboBox<>(new String[]{SmartChartManager.DEFAULT_COLUMN_NAME});
+        protected JComboBox<String> columnNameCombo1 = new JComboBox<>(new String[]{SmartChartPanel.DEFAULT_COLUMN_NAME});
+        protected JComboBox<String> columnNameCombo2 = new JComboBox<>(new String[]{SmartChartPanel.DEFAULT_COLUMN_NAME});
+        protected JComboBox<String> columnNameCombo3 = new JComboBox<>(new String[]{SmartChartPanel.DEFAULT_COLUMN_NAME});
+        protected JComboBox<String> columnNameCombo4 = new JComboBox<>(new String[]{SmartChartPanel.DEFAULT_COLUMN_NAME});
+        
+        protected JComboBox<Color> colorCombo1 = new JComboBox<>(SeriesColor.COLORS);
+        protected JComboBox<Color> colorCombo2 = new JComboBox<>(SeriesColor.COLORS);
+        protected JComboBox<Color> colorCombo3 = new JComboBox<>(SeriesColor.COLORS);
+        protected JComboBox<Color> colorCombo4 = new JComboBox<>(SeriesColor.COLORS);
         
         public AddtionalAxisPanelY1Left(String itemName, AxisPosition axisPosition, Color color) {
             super(itemName, axisPosition, color);
@@ -193,20 +214,29 @@ public abstract class AddtionalAxisPanel extends JPanel {
             columnNameCombo3.setPreferredSize(new Dimension(120, 25));
             columnNameCombo4.setPreferredSize(new Dimension(120, 25));
             
+            colorCombo1.setPreferredSize(new Dimension(80, 25));
+            colorCombo2.setPreferredSize(new Dimension(80, 25));
+            colorCombo3.setPreferredSize(new Dimension(80, 25));
+            colorCombo4.setPreferredSize(new Dimension(80, 25));
+            
             // initialize panel
             this.add(BLANK_LABEL);
             this.add(label1);
-            this.add(chartCombo1);
-            this.add(columnNameCombo1);
             this.add(label2);
-            this.add(chartCombo2);
-            this.add(columnNameCombo2);
             this.add(label3);
-            this.add(chartCombo3);
-            this.add(columnNameCombo3);
             this.add(label4);
+            this.add(chartCombo1);
+            this.add(chartCombo2);
+            this.add(chartCombo3);
             this.add(chartCombo4);
+            this.add(columnNameCombo1);
+            this.add(columnNameCombo2);
+            this.add(columnNameCombo3);
             this.add(columnNameCombo4);
+            this.add(colorCombo1);
+            this.add(colorCombo2);
+            this.add(colorCombo3);
+            this.add(colorCombo4);
             
             // panel layout
             TitledBorder border = new TitledBorder(itemName + " Axis");
@@ -229,6 +259,8 @@ public abstract class AddtionalAxisPanel extends JPanel {
             gbc.gridx++;
             layout.setConstraints(columnNameCombo1, gbc);
             gbc.gridx++;
+            layout.setConstraints(colorCombo1, gbc);
+            gbc.gridx++;
             layout.setConstraints(BLANK_LABEL, gbc);
             gbc.gridx++;
             layout.setConstraints(label2, gbc);
@@ -236,7 +268,8 @@ public abstract class AddtionalAxisPanel extends JPanel {
             layout.setConstraints(chartCombo2, gbc);
             gbc.gridx++;
             layout.setConstraints(columnNameCombo2, gbc);
-            
+            gbc.gridx++;
+            layout.setConstraints(colorCombo2, gbc);
             gbc.gridy++;
             gbc.gridx = 0;
             layout.setConstraints(label3, gbc);
@@ -245,6 +278,8 @@ public abstract class AddtionalAxisPanel extends JPanel {
             gbc.gridx++;
             layout.setConstraints(columnNameCombo3, gbc);
             gbc.gridx++;
+            layout.setConstraints(colorCombo3, gbc);
+            gbc.gridx++;
             layout.setConstraints(BLANK_LABEL, gbc);
             gbc.gridx++;
             layout.setConstraints(label4, gbc);
@@ -252,6 +287,8 @@ public abstract class AddtionalAxisPanel extends JPanel {
             layout.setConstraints(chartCombo4, gbc);
             gbc.gridx++;
             layout.setConstraints(columnNameCombo4, gbc);
+            gbc.gridx++;
+            layout.setConstraints(colorCombo4, gbc);
         }
         
         @Override
@@ -260,7 +297,12 @@ public abstract class AddtionalAxisPanel extends JPanel {
             chartCombo2.setSelectedIndex(0);
             chartCombo3.setSelectedIndex(0);
             chartCombo4.setSelectedIndex(0);
-            setupColumnNameCombo(new ArrayList<>(Arrays.asList(SmartChartManager.DEFAULT_COLUMN_NAME)));
+            setupColumnNameCombo(new ArrayList<>(Arrays.asList(SmartChartPanel.DEFAULT_COLUMN_NAME)));
+            
+            colorCombo1.setSelectedIndex(0);
+            colorCombo2.setSelectedIndex(0);
+            colorCombo3.setSelectedIndex(0);
+            colorCombo4.setSelectedIndex(0);
         }
         
         @Override

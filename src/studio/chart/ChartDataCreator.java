@@ -8,7 +8,6 @@ import java.util.NavigableMap;
 import java.util.TimeZone;
 import java.util.TreeMap;
 
-import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.LegendItemSource;
@@ -28,10 +27,7 @@ import org.jfree.chart.plot.Plot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.category.CategoryItemRenderer;
-import org.jfree.chart.renderer.xy.CandlestickRenderer;
-import org.jfree.chart.renderer.xy.HighLowRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.CompositeTitle;
 import org.jfree.chart.title.LegendTitle;
 import org.jfree.data.category.CategoryDataset;
@@ -209,100 +205,34 @@ public class ChartDataCreator {
      * @return
      */
     private static JFreeChart createSingleLineChart(XYDataset xyDataset, ChartSetting setting) {
-        JFreeChart chart = null;
+        // Domain Axis
         ChartAxisSetting xSetting = setting.getAxisSetting(AxisPosition.X1);
-        ChartAxisSetting ySetting = setting.getAxisSetting(AxisPosition.Y1);
-        
-        ChartType chartType = ySetting.getChartType();
+        ValueAxis domainAxis = null;
+        boolean isDateDomainAxis = false;
         if (xyDataset instanceof TimeSeriesCollection) {
-            TimeSeriesCollection dataset = (TimeSeriesCollection) xyDataset;
-            switch (chartType) {
-                case LINE:
-                    chart = ChartFactory.createTimeSeriesChart(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
-                    break;
-                case LINE_MARK:
-                case LINE_DT:
-                    chart = ChartFactory.createTimeSeriesChart(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
-                    ((XYLineAndShapeRenderer) chart.getXYPlot().getRenderer()).setBaseShapesVisible(true);
-                    if (chartType == ChartType.LINE_DT) {
-                        RendererFactory.changeShapeDot(chart.getXYPlot().getRenderer()); 
-                    }
-                    break;
-                case BAR:
-                    chart = ChartFactory.createXYBarChart(setting.getTitle(), xSetting.getLabel(), true, ySetting.getLabel(), dataset);
-                    break;
-                case BAR_DENSITY:
-                    chart = ChartFactory.createXYBarChart(setting.getTitle(), xSetting.getLabel(), true, ySetting.getLabel(), dataset);
-                    break;
-                case SCATTER:
-                case SCATTER_UD:
-                case SCATTER_DT:
-                    chart = ChartFactory.createScatterPlot(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
-                    if (chartType == ChartType.SCATTER_UD) {
-                        RendererFactory.changeShapeArrow((XYLineAndShapeRenderer) chart.getXYPlot().getRenderer()); 
-                    } else if (chartType == ChartType.SCATTER_DT) {
-                        RendererFactory.changeShapeDot(chart.getXYPlot().getRenderer()); 
-                    }
-                    break;
-                case OHLC:
-                    chart = ChartFactory.createCandlestickChart(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), convertToOHLCDataset(dataset), true);
-                    chart.getXYPlot().setRenderer(RendererFactory.createXYItemRenderer(ChartType.OHLC, true, true, false));
-                    break;
-                case HIGH_LOW:
-                    chart = ChartFactory.createHighLowChart(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), convertToOHLCDataset(dataset), true);
-                    break;
-                default:
-            }
-
+            domainAxis = new DateAxis();
+            domainAxis.setLowerMargin(0.02);
+            domainAxis.setUpperMargin(0.02);
+            isDateDomainAxis = true;
         } else if (xyDataset instanceof XYSeriesCollection) {
-            XYSeriesCollection dataset = (XYSeriesCollection) xyDataset;
-            switch (chartType) {
-                case LINE:
-                    chart = ChartFactory.createXYLineChart(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
-                    break;
-                case LINE_MARK:
-                case LINE_DT:
-                    chart = ChartFactory.createXYLineChart(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
-                    ((XYLineAndShapeRenderer) chart.getXYPlot().getRenderer()).setBaseShapesVisible(true);
-                    if (chartType == ChartType.LINE_DT) {
-                        RendererFactory.changeShapeDot(chart.getXYPlot().getRenderer()); 
-                    }
-                    break;
-                case BAR:
-                    chart = ChartFactory.createXYBarChart(setting.getTitle(), xSetting.getLabel(), false, ySetting.getLabel(), dataset);
-                    break;
-                case BAR_DENSITY:
-                    chart = ChartFactory.createHistogram(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset, PlotOrientation.VERTICAL, true, true, false);
-                    break;
-                case SCATTER:
-                case SCATTER_UD:
-                case SCATTER_DT:
-                    chart = ChartFactory.createScatterPlot(setting.getTitle(), xSetting.getLabel(), ySetting.getLabel(), dataset);
-                    if (chartType == ChartType.SCATTER_UD) {
-                        RendererFactory.changeShapeArrow((XYLineAndShapeRenderer) chart.getXYPlot().getRenderer()); 
-                    } else if (chartType == ChartType.SCATTER_DT) {
-                        RendererFactory.changeShapeDot(chart.getXYPlot().getRenderer()); 
-                    }
-                    break;
-                default:
-            }
+            domainAxis = new NumberAxis();
+        } else {
+            domainAxis = new NumberAxis();
         }
-        if (chart == null) {
-            return null;
-        }
+
+        // Range Axis / Plot
+        ChartAxisSetting ySetting = setting.getAxisSetting(AxisPosition.Y1);
+        XYPlot plot = createXYPlot(xyDataset, AxisLocation.BOTTOM_OR_LEFT, 
+                RendererFactory.createXYItemRenderer(ySetting, isDateDomainAxis, xyDataset.getSeriesCount()), ySetting.getChartType());
+        plot.setDomainAxis(domainAxis);
         
-        // Set auto-range IncludeZero
-        ValueAxis domainAxis = chart.getXYPlot().getDomainAxis();
-        ValueAxis rangeAxis = chart.getXYPlot().getRangeAxis();
-        if (domainAxis instanceof NumberAxis) {
-            ((NumberAxis) domainAxis).setAutoRangeIncludesZero(xSetting.isIncludeZero());
-        }
-        if (rangeAxis instanceof NumberAxis) {
-            ((NumberAxis) rangeAxis).setAutoRangeIncludesZero(ySetting.isIncludeZero());
-        }
+        // create chart
+        JFreeChart chart = new JFreeChart(setting.getTitle(), JFreeChart.DEFAULT_TITLE_FONT, plot, true);
+        ChartUtilities.applyCurrentTheme(chart);
+        
         return chart;
     }
-
+    
     /**
      * Create multiple plot chart
      * 
@@ -318,16 +248,14 @@ public class ChartDataCreator {
         ValueAxis domainAxis = null;
         boolean isDateDomainAxis = false;
         if (xyDatasetList.get(0) instanceof TimeSeriesCollection) {
-            domainAxis = new DateAxis(xSetting.getLabel());
+            domainAxis = new DateAxis();
             domainAxis.setLowerMargin(0.02);
             domainAxis.setUpperMargin(0.02);
             isDateDomainAxis = true;
         } else if (xyDatasetList.get(0) instanceof XYSeriesCollection) {
-            domainAxis = new NumberAxis(xSetting.getLabel());
-            ((NumberAxis) domainAxis).setAutoRangeIncludesZero(xSetting.isIncludeZero());
+            domainAxis = new NumberAxis();
         } else {
-            domainAxis = new NumberAxis(xSetting.getLabel());
-            ((NumberAxis) domainAxis).setAutoRangeIncludesZero(xSetting.isIncludeZero());
+            domainAxis = new NumberAxis();
         }
 
         // CombinedDomainXYPlot
@@ -336,98 +264,102 @@ public class ChartDataCreator {
         combinedDomainXYPlot.setOrientation(PlotOrientation.VERTICAL);
 
         // plot 1 - Y1
-        ChartAxisSetting y1LeftSetting = setting.getAxisSetting(AxisPosition.Y1);
-        XYPlot xyPlot1 = createXYPlot(xyDatasetList.get(datasetNo), y1LeftSetting.getLabel(), AxisLocation.BOTTOM_OR_LEFT, 
-                    RendererFactory.createXYItemRenderer(y1LeftSetting.getChartType(), isDateDomainAxis), y1LeftSetting.isIncludeZero());
+        ChartAxisSetting axisSetting = setting.getAxisSetting(AxisPosition.Y1);
+        XYPlot xyPlot1 = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT, 
+                    RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
+        combinedDomainXYPlot.add(xyPlot1, (int) Math.round(100 * axisSetting.getWeight()));
         datasetNo++;
         // Y1 left 1-4
         if (setting.isY1Left1Enable()) {
+            axisSetting = setting.getAxisSetting(AxisPosition.Y1_LEFT1);
             addDatasetToPlotMapAxis(xyPlot1, 2, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT,
-                    RendererFactory.createXYItemRenderer(setting.getAxisSetting(AxisPosition.Y1_LEFT1).getChartType(), isDateDomainAxis));
+                    RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
             datasetNo++;
         }
         if (setting.isY1Left2Enable()) {
+            axisSetting = setting.getAxisSetting(AxisPosition.Y1_LEFT2);
             addDatasetToPlotMapAxis(xyPlot1, 3, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT,
-                    RendererFactory.createXYItemRenderer(setting.getAxisSetting(AxisPosition.Y1_LEFT2).getChartType(), isDateDomainAxis));
+                    RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
             datasetNo++;
         }
         if (setting.isY1Left3Enable()) {
+            axisSetting = setting.getAxisSetting(AxisPosition.Y1_LEFT3);
             addDatasetToPlotMapAxis(xyPlot1, 4, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT,
-                    RendererFactory.createXYItemRenderer(setting.getAxisSetting(AxisPosition.Y1_LEFT3).getChartType(), isDateDomainAxis));
+                    RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
             datasetNo++;
         }
         if (setting.isY1Left4Enable()) {
+            axisSetting = setting.getAxisSetting(AxisPosition.Y1_LEFT4);
             addDatasetToPlotMapAxis(xyPlot1, 5, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT,
-                    RendererFactory.createXYItemRenderer(setting.getAxisSetting(AxisPosition.Y1_LEFT4).getChartType(), isDateDomainAxis));
+                    RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
             datasetNo++;
         }
         // Y1 right
         if (setting.isY1RightEnable()) {
-            ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y1_RIGHT);
-            addDatasetToPlot(xyPlot1, 1, xyDatasetList.get(datasetNo), rightSetting.getLabel(), AxisLocation.BOTTOM_OR_RIGHT, 
-                    RendererFactory.createXYItemRenderer(rightSetting.getChartType(), isDateDomainAxis), rightSetting.isIncludeZero());
+            axisSetting = setting.getAxisSetting(AxisPosition.Y1_RIGHT);
+            addDatasetToPlot(xyPlot1, 1, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_RIGHT, 
+                    RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
             datasetNo++;
         }
-        combinedDomainXYPlot.add(xyPlot1, (int) Math.round(100 * y1LeftSetting.getWeight()));
-        
+
         // plot 2
         if (setting.getPlotCount() >= 2) {
-            ChartAxisSetting leftSetting = setting.getAxisSetting(AxisPosition.Y2_LEFT);
-            XYPlot xyPlot2 = createXYPlot(xyDatasetList.get(datasetNo), leftSetting.getLabel(), AxisLocation.TOP_OR_LEFT,
-                    RendererFactory.createXYItemRenderer(leftSetting.getChartType(), isDateDomainAxis), leftSetting.isIncludeZero());
+            axisSetting = setting.getAxisSetting(AxisPosition.Y2_LEFT);
+            XYPlot xyPlot2 = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_LEFT,
+                    RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
+            combinedDomainXYPlot.add(xyPlot2, (int) Math.round(100 * axisSetting.getWeight()));
             datasetNo++;
             if (setting.isY2RightEnable()) {
-                ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y2_RIGHT);
-                addDatasetToPlot(xyPlot2, 1, xyDatasetList.get(datasetNo), rightSetting.getLabel(), AxisLocation.TOP_OR_RIGHT, 
-                        RendererFactory.createXYItemRenderer(rightSetting.getChartType(), isDateDomainAxis), rightSetting.isIncludeZero());
+                axisSetting = setting.getAxisSetting(AxisPosition.Y2_RIGHT);
+                addDatasetToPlot(xyPlot2, 1, xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_RIGHT, 
+                        RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
                 datasetNo++;
             }
-            combinedDomainXYPlot.add(xyPlot2, (int) Math.round(100 * leftSetting.getWeight()));
         }
         
         // plot 3
         if (setting.getPlotCount() >= 3) {
-            ChartAxisSetting leftSetting = setting.getAxisSetting(AxisPosition.Y3_LEFT);
-            XYPlot xyPlot3 = createXYPlot(xyDatasetList.get(datasetNo), leftSetting.getLabel(), AxisLocation.TOP_OR_LEFT, 
-                    RendererFactory.createXYItemRenderer(leftSetting.getChartType(), isDateDomainAxis), leftSetting.isIncludeZero());
+            axisSetting = setting.getAxisSetting(AxisPosition.Y3_LEFT);
+            XYPlot xyPlot3 = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_LEFT, 
+                    RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
+            combinedDomainXYPlot.add(xyPlot3, (int) Math.round(100 * axisSetting.getWeight()));
             datasetNo++;
             if (setting.isY3RightEnable()) {
-                ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y3_RIGHT);
-                addDatasetToPlot(xyPlot3, 1, xyDatasetList.get(datasetNo), rightSetting.getLabel(), AxisLocation.TOP_OR_RIGHT, 
-                        RendererFactory.createXYItemRenderer(rightSetting.getChartType(), isDateDomainAxis), rightSetting.isIncludeZero());
+                axisSetting = setting.getAxisSetting(AxisPosition.Y3_RIGHT);
+                addDatasetToPlot(xyPlot3, 1, xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_RIGHT, 
+                        RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
                 datasetNo++;
             }
-            combinedDomainXYPlot.add(xyPlot3, (int) Math.round(100 * leftSetting.getWeight()));
         }
 
         // plot 4
         if (setting.getPlotCount() >= 4) {
-            ChartAxisSetting leftSetting = setting.getAxisSetting(AxisPosition.Y4_LEFT);
-            XYPlot xyPlot4 = createXYPlot(xyDatasetList.get(datasetNo), leftSetting.getLabel(), AxisLocation.TOP_OR_LEFT,
-                    RendererFactory.createXYItemRenderer(leftSetting.getChartType(), isDateDomainAxis), leftSetting.isIncludeZero());
+            axisSetting = setting.getAxisSetting(AxisPosition.Y4_LEFT);
+            XYPlot xyPlot4 = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_LEFT,
+                    RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
+            combinedDomainXYPlot.add(xyPlot4, (int) Math.round(100 * axisSetting.getWeight()));
             datasetNo++;
             if (setting.isY4RightEnable()) {
-                ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y4_RIGHT);
-                addDatasetToPlot(xyPlot4, 1, xyDatasetList.get(datasetNo), rightSetting.getLabel(), AxisLocation.TOP_OR_RIGHT, 
-                        RendererFactory.createXYItemRenderer(rightSetting.getChartType(), isDateDomainAxis), rightSetting.isIncludeZero());
+                axisSetting = setting.getAxisSetting(AxisPosition.Y4_RIGHT);
+                addDatasetToPlot(xyPlot4, 1, xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_RIGHT, 
+                        RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
                 datasetNo++;
             }
-            combinedDomainXYPlot.add(xyPlot4, (int) Math.round(100 * leftSetting.getWeight()));
         }
         
         // plot 5
         if (setting.getPlotCount() >= 5) {
-            ChartAxisSetting leftSetting = setting.getAxisSetting(AxisPosition.Y5_LEFT);
-            XYPlot xyPlot5 = createXYPlot(xyDatasetList.get(datasetNo), leftSetting.getLabel(), AxisLocation.TOP_OR_LEFT,
-                    RendererFactory.createXYItemRenderer(leftSetting.getChartType(), isDateDomainAxis), leftSetting.isIncludeZero());
+            axisSetting = setting.getAxisSetting(AxisPosition.Y5_LEFT);
+            XYPlot xyPlot5 = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_LEFT,
+                    RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
+            combinedDomainXYPlot.add(xyPlot5, (int) Math.round(100 * axisSetting.getWeight()));
             datasetNo++;
             if (setting.isY5RightEnable()) {
-                ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y5_RIGHT);
-                addDatasetToPlot(xyPlot5, 1, xyDatasetList.get(datasetNo), rightSetting.getLabel(), AxisLocation.TOP_OR_RIGHT, 
-                        RendererFactory.createXYItemRenderer(rightSetting.getChartType(), isDateDomainAxis), rightSetting.isIncludeZero());
+                axisSetting = setting.getAxisSetting(AxisPosition.Y5_RIGHT);
+                addDatasetToPlot(xyPlot5, 1, xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_RIGHT, 
+                        RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
                 datasetNo++;
             }
-            combinedDomainXYPlot.add(xyPlot5, (int) Math.round(100 * leftSetting.getWeight()));
         }
 
         // create chart
@@ -444,16 +376,16 @@ public class ChartDataCreator {
         return chart;
     }
 
-    private static XYPlot createXYPlot(XYDataset dataset, String label, AxisLocation location, XYItemRenderer renderer, boolean includeZero) {
-        NumberAxis numberAxis = new NumberAxis(label);
-        numberAxis.setAutoRangeIncludesZero(includeZero);
-        XYPlot plot = null;
-        if (dataset instanceof TimeSeriesCollection && 
-                (renderer instanceof CandlestickRenderer || renderer instanceof HighLowRenderer)) {
-            plot = new XYPlot(convertToOHLCDataset((TimeSeriesCollection)dataset), null, numberAxis, renderer);
-        } else {
-            plot = new XYPlot(dataset, null, numberAxis, renderer);
+    private static XYPlot createXYPlot(XYDataset dataset, AxisLocation location, XYItemRenderer renderer, ChartType chartType) {
+        if (chartType == ChartType.OHLC || chartType == ChartType.HIGH_LOW) {
+            if (dataset instanceof TimeSeriesCollection) {
+                dataset = convertToOHLCDataset((TimeSeriesCollection)dataset);
+            } else {
+                throw new RuntimeException(dataset.getClass().getSimpleName() + " cannot convert to OHLC dataset.");
+            }
         }
+        NumberAxis numberAxis = new NumberAxis();
+        XYPlot plot = new XYPlot(dataset, null, numberAxis, renderer);
         plot.setRangeAxisLocation(location);
         plot.setRangePannable(true);
         return plot;
@@ -462,10 +394,16 @@ public class ChartDataCreator {
     /**
      * Add dataset to plot using "new" axis
      */
-    private static void addDatasetToPlot(XYPlot plot, int index, XYDataset dataset, String label, AxisLocation location, XYItemRenderer renderer, boolean includeZero) {
+    private static void addDatasetToPlot(XYPlot plot, int index, XYDataset dataset, AxisLocation location, XYItemRenderer renderer, ChartType chartType) {
+        if (chartType == ChartType.OHLC || chartType == ChartType.HIGH_LOW) {
+            if (dataset instanceof TimeSeriesCollection) {
+                dataset = convertToOHLCDataset((TimeSeriesCollection)dataset);
+            } else {
+                throw new RuntimeException(dataset.getClass().getSimpleName() + " cannot convert to OHLC dataset.");
+            }
+        }
         plot.setDataset(index, dataset);
-        NumberAxis numberAxis = new NumberAxis(label);
-        numberAxis.setAutoRangeIncludesZero(includeZero);
+        NumberAxis numberAxis = new NumberAxis();
         plot.setRangeAxis(index, numberAxis);
         plot.setRangeAxisLocation(index, location);
         plot.setRenderer(index, renderer);
@@ -476,11 +414,18 @@ public class ChartDataCreator {
     /**
      * Add dataset to plot using "existing" axis
      */
-    private static void addDatasetToPlotMapAxis(XYPlot plot, int index, int rangeAxis, XYDataset dataset, AxisLocation location, XYItemRenderer renderer) {
+    private static void addDatasetToPlotMapAxis(XYPlot plot, int index, int rangeIndex, XYDataset dataset, AxisLocation location, XYItemRenderer renderer, ChartType chartType) {
+        if (chartType == ChartType.OHLC || chartType == ChartType.HIGH_LOW) {
+            if (dataset instanceof TimeSeriesCollection) {
+                dataset = convertToOHLCDataset((TimeSeriesCollection)dataset);
+            } else {
+                throw new RuntimeException(dataset.getClass().getSimpleName() + " cannot convert to OHLC dataset.");
+            }
+        }
         plot.setDataset(index, dataset);
         plot.setRangeAxisLocation(index, location);
         plot.setRenderer(index, renderer);
-        plot.mapDatasetToRangeAxis(index, rangeAxis);
+        plot.mapDatasetToRangeAxis(index, rangeIndex);
     }
     
     /**
@@ -586,7 +531,7 @@ public class ChartDataCreator {
         // plot 1 - Y1
         ChartAxisSetting y1Setting = setting.getAxisSetting(AxisPosition.Y1);
         CategoryPlot plot1 = createCategoryPlot(categoryDatasetList.get(datasetNo), y1Setting.getLabel(), AxisLocation.BOTTOM_OR_LEFT, 
-                    RendererFactory.createCategoryItemRenderer(y1Setting.getChartType()));
+                    RendererFactory.createCategoryItemRenderer(y1Setting));
         datasetNo++;
         combinedDomainCategoryPlot.add(plot1, (int) Math.round(100 * y1Setting.getWeight()));
         
@@ -594,7 +539,7 @@ public class ChartDataCreator {
         if (setting.getPlotCount() >= 2) {
             ChartAxisSetting leftSetting = setting.getAxisSetting(AxisPosition.Y2_LEFT);
             CategoryPlot plot2 = createCategoryPlot(categoryDatasetList.get(datasetNo), leftSetting.getLabel(), AxisLocation.TOP_OR_LEFT,
-                    RendererFactory.createCategoryItemRenderer(leftSetting.getChartType()));
+                    RendererFactory.createCategoryItemRenderer(leftSetting));
             datasetNo++;
             combinedDomainCategoryPlot.add(plot2, (int) Math.round(100 * leftSetting.getWeight()));
         }
@@ -603,7 +548,7 @@ public class ChartDataCreator {
         if (setting.getPlotCount() >= 3) {
             ChartAxisSetting leftSetting = setting.getAxisSetting(AxisPosition.Y3_LEFT);
             CategoryPlot plot3 = createCategoryPlot(categoryDatasetList.get(datasetNo), leftSetting.getLabel(), AxisLocation.TOP_OR_LEFT,
-                    RendererFactory.createCategoryItemRenderer(leftSetting.getChartType()));
+                    RendererFactory.createCategoryItemRenderer(leftSetting));
             datasetNo++;
             combinedDomainCategoryPlot.add(plot3, (int) Math.round(100 * leftSetting.getWeight()));
         }
@@ -612,7 +557,7 @@ public class ChartDataCreator {
         if (setting.getPlotCount() >= 4) {
             ChartAxisSetting leftSetting = setting.getAxisSetting(AxisPosition.Y4_LEFT);
             CategoryPlot plot4 = createCategoryPlot(categoryDatasetList.get(datasetNo), leftSetting.getLabel(), AxisLocation.TOP_OR_LEFT,
-                    RendererFactory.createCategoryItemRenderer(leftSetting.getChartType()));
+                    RendererFactory.createCategoryItemRenderer(leftSetting));
             datasetNo++;
             combinedDomainCategoryPlot.add(plot4, (int) Math.round(100 * leftSetting.getWeight()));
         }
@@ -621,7 +566,7 @@ public class ChartDataCreator {
         if (setting.getPlotCount() >= 5) {
             ChartAxisSetting leftSetting = setting.getAxisSetting(AxisPosition.Y5_LEFT);
             CategoryPlot plot5 = createCategoryPlot(categoryDatasetList.get(datasetNo), leftSetting.getLabel(), AxisLocation.TOP_OR_LEFT,
-                    RendererFactory.createCategoryItemRenderer(leftSetting.getChartType()));
+                    RendererFactory.createCategoryItemRenderer(leftSetting));
             datasetNo++;
             combinedDomainCategoryPlot.add(plot5, (int) Math.round(100 * leftSetting.getWeight()));
         }
@@ -732,8 +677,9 @@ public class ChartDataCreator {
                 System.err.println("Error adding to series");
             }
 
-            if (series.getItemCount() > 0)
+            if (series.getItemCount() > 0) {
                 tsc.addSeries(series);
+            }
         }
 
         return tsc;
@@ -841,7 +787,7 @@ public class ChartDataCreator {
             return null;
         }
         
-        // search ohlc coloumns
+        // search ohlc columns
         int openIndex = -1;
         int highIndex = -1;
         int lowIndex = -1;

@@ -7,8 +7,6 @@ public enum ChartType {
     LINE_DT,
     
     BAR,
-    // bar with density (under construction)
-    BAR_DENSITY,
     
     SCATTER,
     // scatter up/down

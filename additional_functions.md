@@ -45,10 +45,8 @@ Multi-axis Chart Function
 
 This version is able to create multi-axis chart. 
 
-* Multi-Axis
-  X-axis is only one, Y-axes are 1-5 and left-right axis is enabled.
-* Chart Type
-Line, Line-Marker, Bar, Scatter and OHLC. (Bar-Density is not implemented yet.)
+* Multi-Axis -  X-axis is only one, Y-axes are 1-5 and left-right axis is enabled.
+* Chart Type - Line, Line-Marker, Bar, Scatter and OHLC.
 * Show corss-hair for first item for each Y-axis.
 * Show horizontal and vertical line for X-Y axis.
 * Scroll with zoom-in.

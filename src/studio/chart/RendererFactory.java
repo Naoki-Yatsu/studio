@@ -13,6 +13,7 @@ import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.labels.XYToolTipGenerator;
 import org.jfree.chart.renderer.category.CategoryItemRenderer;
 import org.jfree.chart.renderer.category.LineAndShapeRenderer;
+import org.jfree.chart.renderer.xy.AbstractXYItemRenderer;
 import org.jfree.chart.renderer.xy.CandlestickRenderer;
 import org.jfree.chart.renderer.xy.HighLowRenderer;
 import org.jfree.chart.renderer.xy.XYBarRenderer;
@@ -22,62 +23,71 @@ import org.jfree.chart.urls.StandardCategoryURLGenerator;
 import org.jfree.chart.urls.StandardXYURLGenerator;
 import org.jfree.ui.TextAnchor;
 
+import studio.chart.ChartSetting.ChartAxisSetting;
+
 public class RendererFactory {
 
-    public static XYItemRenderer createXYItemRenderer(ChartType chartType, boolean isDateDomainAxis) {
-        return createXYItemRenderer(chartType, isDateDomainAxis, true, false);
+    public static XYItemRenderer createXYItemRenderer(ChartAxisSetting axisSetting, boolean isDateDomainAxis, int seriesCount) {
+        return createXYItemRenderer(axisSetting, isDateDomainAxis, true, false, seriesCount);
     }
 
-    public static XYItemRenderer createXYItemRenderer(ChartType chartType, boolean isDateDomainAxis, boolean tooltips, boolean urls) {
-        XYItemRenderer renderer = null;
+    public static AbstractXYItemRenderer createXYItemRenderer(ChartAxisSetting axisSetting, boolean isDateDomainAxis, boolean tooltips, boolean urls, int seriesCount) {
+        ChartType chartType = axisSetting.getChartType();
+        Color seriesColor = axisSetting.getColor();
+        AbstractXYItemRenderer renderer = null;
+        
         switch (chartType) {
             case LINE:
-                return createLineChartRenderer(tooltips, urls, false); 
+                renderer = createLineChartRenderer(tooltips, urls, false);
+                break;
             case LINE_MARK:
             case LINE_DT:
                 renderer = createLineChartRenderer(tooltips, urls, true);
                 if (chartType == ChartType.LINE_DT) {
-                    changeShapeDot(renderer); 
+                    changeShapeDot(renderer, seriesCount); 
                 }
-                return renderer;
+                break;
                 
             case BAR:
-            case BAR_DENSITY:
-                return createBarChartRenderer(isDateDomainAxis, tooltips, urls);
+                renderer = createBarChartRenderer(isDateDomainAxis, tooltips, urls);
+                break;
                 
             case SCATTER:
+                renderer = createScatterChartRenderer(tooltips, urls);
+                break;
             case SCATTER_UD:
+                renderer = createScatterChartRenderer(tooltips, urls);
+                changeShapeArrow((XYLineAndShapeRenderer) renderer, seriesCount);
+                break;
             case SCATTER_DT:
                 renderer = createScatterChartRenderer(tooltips, urls);
-                if (chartType == ChartType.SCATTER_UD) {
-                    changeShapeArrow((XYLineAndShapeRenderer) renderer); 
-                } else if (chartType == ChartType.SCATTER_DT) {
-                    changeShapeDot(renderer); 
-                }
-                return renderer;
-                
+                changeShapeArrow((XYLineAndShapeRenderer) renderer, seriesCount); 
+                break;
+
             case OHLC:
-                CandlestickRenderer candlestickRenderer = new CandlestickRenderer();
-                candlestickRenderer.setAutoWidthGap(5.0);
-                candlestickRenderer.setUseOutlinePaint(true);
-                candlestickRenderer.setSeriesOutlinePaint(0, Color.DARK_GRAY);
-                //// Fallowing settings also works.
-                // candlestickRenderer.setSeriesPaint(0, Color.BLACK);
-                // candlestickRenderer.setAutoPopulateSeriesPaint(false);
-                // candlestickRenderer.setAutoPopulateSeriesStroke(false);
-                return candlestickRenderer;
+                renderer = createCandlestickRenderer(seriesColor);
+                break;
                 
             case HIGH_LOW:
                 renderer = new HighLowRenderer();
                 renderer.setBaseToolTipGenerator(new HighLowItemLabelGenerator());
-                return renderer;
+                break;
             default:
                 return null;
         }
+        
+        // set color
+        if (chartType == ChartType.SCATTER_UD) {
+            setSeriesColorForScatterUD(renderer, seriesColor, seriesCount);
+        } else {
+            setSeriesColor(renderer, seriesColor, seriesCount);
+        }
+        
+        return renderer;
     }
 
-    public static XYItemRenderer createLineChartRenderer(boolean tooltips, boolean urls, boolean shapes) {
-        XYItemRenderer renderer = new XYLineAndShapeRenderer(true, shapes);
+    public static AbstractXYItemRenderer createLineChartRenderer(boolean tooltips, boolean urls, boolean shapes) {
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, shapes);
         if (tooltips) {
             renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
         }
@@ -87,7 +97,7 @@ public class RendererFactory {
         return renderer;
     }
 
-    public static XYItemRenderer createBarChartRenderer(boolean isDateAxis, boolean tooltips, boolean urls) {
+    public static AbstractXYItemRenderer createBarChartRenderer(boolean isDateAxis, boolean tooltips, boolean urls) {
         XYBarRenderer renderer = new XYBarRenderer();
         if (tooltips) {
             XYToolTipGenerator tt;
@@ -105,7 +115,7 @@ public class RendererFactory {
         return renderer;
     }
 
-    public static XYItemRenderer createScatterChartRenderer(boolean tooltips, boolean urls) {
+    public static XYLineAndShapeRenderer createScatterChartRenderer(boolean tooltips, boolean urls) {
         XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(false, true);
         if (tooltips) {
             renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
@@ -115,37 +125,83 @@ public class RendererFactory {
         }
         return renderer;
     }
-    
-    public static XYLineAndShapeRenderer changeShapeArrow(XYLineAndShapeRenderer renderer) {
-        //Shape up = ShapeUtilities.createUpTriangle(4);
-        // Shape down = ShapeUtilities.createDownTriangle(4);
-        Shape up = createUpArrow(5);
-        Shape down = createDownArrow(5);
 
-        renderer.setSeriesShape(0, up);
-        renderer.setSeriesShape(1, down);
+    public static CandlestickRenderer createCandlestickRenderer(Color color) {
+        CandlestickRenderer candlestickRenderer = new CandlestickRenderer();
+        candlestickRenderer.setAutoWidthGap(5.0);
+        candlestickRenderer.setUseOutlinePaint(true);
+        candlestickRenderer.setSeriesOutlinePaint(0, Color.DARK_GRAY);
         
-        // additional
-        renderer.setSeriesShape(2, up);
-        renderer.setSeriesShape(3, down);
-        renderer.setSeriesShape(4, up);
-        renderer.setSeriesShape(5, down);
-
-        renderer.setUseOutlinePaint(true);
-
-        // renderer.setSeriesOutlinePaint(0, Color.black);
-        // renderer.setSeriesOutlinePaint(1, Color.black);
-
-        return renderer;
+        if (color != null) {
+            candlestickRenderer.setUpPaint(color);
+            candlestickRenderer.setDownPaint(color.darker());
+        }
+        
+        //// Following settings also works.
+        // candlestickRenderer.setSeriesPaint(0, Color.BLACK);
+        // candlestickRenderer.setAutoPopulateSeriesPaint(false);
+        // candlestickRenderer.setAutoPopulateSeriesStroke(false);
+        return candlestickRenderer;
     }
     
-    public static XYItemRenderer changeShapeDot(XYItemRenderer renderer) {
+    
+    /**
+     * Set color for all series
+     * 
+     * @param renderer
+     * @param seriesColor
+     * @param seriesCount
+     */
+    public static void setSeriesColor(AbstractXYItemRenderer renderer, Color seriesColor, int seriesCount) {
+        if (seriesColor == null) {
+            return;
+        }
+        renderer.setAutoPopulateSeriesStroke(false);
+        renderer.setAutoPopulateSeriesPaint(false);
+        for (int i = 0; i < seriesCount; i++) {
+            renderer.setSeriesPaint(i, seriesColor);
+        }
+    }
+    
+    public static void setSeriesColorForScatterUD(AbstractXYItemRenderer renderer, Color seriesColor, int seriesCount) {
+        if (seriesColor == null) {
+            return;
+        }
+        renderer.setAutoPopulateSeriesStroke(false);
+        renderer.setAutoPopulateSeriesPaint(false);
+        Color tmpColor = seriesColor;
+        for (int i = 0; i < seriesCount; i++) {
+            renderer.setSeriesPaint(i, tmpColor);
+            tmpColor = SeriesColor.rotateColor(tmpColor);
+        }
+    }
+    
+    
+    public static void changeShapeArrow(XYLineAndShapeRenderer renderer, int seriesCount) {
+        // Shape up = ShapeUtilities.createUpTriangle(4);
+        // Shape down = ShapeUtilities.createDownTriangle(4);
+        
+        Shape up = createUpArrow(5);
+        Shape down = createDownArrow(5);
+        for (int i = 0; i < seriesCount; i++) {
+            if(i % 2 == 0) {
+                renderer.setSeriesShape(i, up);
+            } else {
+                renderer.setSeriesShape(i, down);
+            }
+            
+        }
+        renderer.setUseOutlinePaint(true);
+        // renderer.setSeriesOutlinePaint(0, Color.black);
+        // renderer.setSeriesOutlinePaint(1, Color.black);
+    }
+    
+    public static void changeShapeDot(XYItemRenderer renderer, int seriesCount) {
         // Shape dot = new Rectangle2D.Double(-3.0, -3.0, 6.0, 6.0);
         Shape dot = new Ellipse2D.Double(0, 0, 2, 2);
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < seriesCount; i++) {
             renderer.setSeriesShape(i, dot);
         }
-        return renderer;
     }
     
     /**
@@ -191,15 +247,18 @@ public class RendererFactory {
      * @param urls
      * @return
      */
-    public static CategoryItemRenderer createCategoryItemRenderer(ChartType chartType, boolean tooltips, boolean urls) {
+    public static CategoryItemRenderer createCategoryItemRenderer(ChartAxisSetting axisSetting, boolean tooltips, boolean urls) {
+        ChartType chartType = axisSetting.getChartType();
         CategoryItemRenderer renderer = null;
+        
+        
         switch (chartType) {
             case LINE:
             case LINE_MARK:
                 renderer = new LineAndShapeRenderer(true, false);
                 break;
+                
             case BAR:
-            case BAR_DENSITY:
                 renderer = new LineAndShapeRenderer(true, false);
                 ItemLabelPosition position1 = new ItemLabelPosition(
                         ItemLabelAnchor.OUTSIDE12, TextAnchor.BOTTOM_CENTER);
@@ -208,6 +267,7 @@ public class RendererFactory {
                         ItemLabelAnchor.OUTSIDE6, TextAnchor.TOP_CENTER);
                 renderer.setBaseNegativeItemLabelPosition(position2);
                 break;
+                
             case SCATTER:
             case SCATTER_UD:
                 renderer = new LineAndShapeRenderer(false, true);
@@ -224,8 +284,8 @@ public class RendererFactory {
         return renderer;
     }
     
-    public static CategoryItemRenderer createCategoryItemRenderer(ChartType chartType) {
-        return createCategoryItemRenderer(chartType, true, false);
+    public static CategoryItemRenderer createCategoryItemRenderer(ChartAxisSetting axisSetting) {
+        return createCategoryItemRenderer(axisSetting, true, false);
     }
 
 }
