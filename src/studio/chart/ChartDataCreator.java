@@ -68,86 +68,22 @@ public class ChartDataCreator {
         }
 
         //
-        // create separate dataset for each axis
+        // create separate dataset for each axis, with REVERSE order.
         //
         NavigableMap<Integer, Integer> fromToMap = new TreeMap<>();
         int endIndex = tableModel.getColumnCount();
-        // Y5 Right
-        if (setting.isY5RightEnable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y5_RIGHT).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
+
+        // reverse order
+        List<AxisPosition> targetAxisList = AxisPosition.AXIS_SUB_ALL;
+        for (int i = targetAxisList.size() - 1; i >= 0; i--) {
+            AxisPosition axisPosition = targetAxisList.get(i);
+            if (setting.isAxisEnable(axisPosition)) {
+                int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(axisPosition).getColumnName());
+                fromToMap.put(index, endIndex);
+                endIndex = index;
+            }
         }
-        // Y5 Left
-        if (setting.isY5LeftEnable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y5_LEFT).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
-        }
-        // Y4 Right
-        if (setting.isY4RightEnable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y4_RIGHT).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
-        }
-        // Y4 Left
-        if (setting.isY4LeftEnable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y4_LEFT).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
-        }
-        // Y3 Right
-        if (setting.isY3RightEnable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y3_RIGHT).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
-        }
-        // Y3 Left
-        if (setting.isY3LeftEnable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y3_LEFT).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
-        }
-        // Y2 Right
-        if (setting.isY2RightEnable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y2_RIGHT).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
-        }
-        // Y2 Left
-        if (setting.isY2LeftEnable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y2_LEFT).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
-        }
-        // Y1 Right
-        if (setting.isY1RightEnable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y1_RIGHT).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
-        }
-        // Y1 Left
-        if (setting.isY1Left4Enable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y1_LEFT4).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
-        }
-        if (setting.isY1Left3Enable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y1_LEFT3).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
-        }
-        if (setting.isY1Left2Enable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y1_LEFT2).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
-        }
-        if (setting.isY1Left1Enable()) {
-            int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(AxisPosition.Y1_LEFT1).getColumnName());
-            fromToMap.put(index, endIndex);
-            endIndex = index;
-        }
-        // Y1
+        // Y1, in the end
         fromToMap.put(1, endIndex);
         
         // Judge x axis type and create dataset
@@ -206,7 +142,7 @@ public class ChartDataCreator {
      */
     private static JFreeChart createSingleLineChart(XYDataset xyDataset, ChartSetting setting) {
         // Domain Axis
-        ChartAxisSetting xSetting = setting.getAxisSetting(AxisPosition.X1);
+        // ChartAxisSetting xSetting = setting.getAxisSetting(AxisPosition.X1);
         ValueAxis domainAxis = null;
         boolean isDateDomainAxis = false;
         if (xyDataset instanceof TimeSeriesCollection) {
@@ -244,7 +180,7 @@ public class ChartDataCreator {
         int datasetNo = 0;
         
         // Domain Axis
-        ChartAxisSetting xSetting = setting.getAxisSetting(AxisPosition.X1);
+        // ChartAxisSetting xSetting = setting.getAxisSetting(AxisPosition.X1);
         ValueAxis domainAxis = null;
         boolean isDateDomainAxis = false;
         if (xyDatasetList.get(0) instanceof TimeSeriesCollection) {
@@ -265,53 +201,60 @@ public class ChartDataCreator {
 
         // plot 1 - Y1
         ChartAxisSetting axisSetting = setting.getAxisSetting(AxisPosition.Y1);
-        XYPlot xyPlot1 = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT, 
+        XYPlot xyPlot = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT, 
                     RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
-        combinedDomainXYPlot.add(xyPlot1, (int) Math.round(100 * axisSetting.getWeight()));
+        combinedDomainXYPlot.add(xyPlot, (int) Math.round(100 * axisSetting.getWeight()));
         datasetNo++;
         // Y1 left 1-4
-        if (setting.isY1Left1Enable()) {
-            axisSetting = setting.getAxisSetting(AxisPosition.Y1_LEFT1);
-            addDatasetToPlotMapAxis(xyPlot1, 2, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT,
+        AxisPosition axisPosition = AxisPosition.Y1_LEFT1;
+        if (setting.isAxisEnable(axisPosition)) {
+            axisSetting = setting.getAxisSetting(axisPosition);
+            addDatasetToPlotMapAxis(xyPlot, 2, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT,
                     RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
             datasetNo++;
         }
-        if (setting.isY1Left2Enable()) {
-            axisSetting = setting.getAxisSetting(AxisPosition.Y1_LEFT2);
-            addDatasetToPlotMapAxis(xyPlot1, 3, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT,
+        axisPosition = AxisPosition.Y1_LEFT2;
+        if (setting.isAxisEnable(axisPosition)) {
+            axisSetting = setting.getAxisSetting(axisPosition);
+            addDatasetToPlotMapAxis(xyPlot, 3, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT,
                     RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
             datasetNo++;
         }
-        if (setting.isY1Left3Enable()) {
-            axisSetting = setting.getAxisSetting(AxisPosition.Y1_LEFT3);
-            addDatasetToPlotMapAxis(xyPlot1, 4, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT,
+        axisPosition = AxisPosition.Y1_LEFT3;
+        if (setting.isAxisEnable(axisPosition)) {
+            axisSetting = setting.getAxisSetting(axisPosition);
+            addDatasetToPlotMapAxis(xyPlot, 4, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT,
                     RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
             datasetNo++;
         }
-        if (setting.isY1Left4Enable()) {
-            axisSetting = setting.getAxisSetting(AxisPosition.Y1_LEFT4);
-            addDatasetToPlotMapAxis(xyPlot1, 5, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT,
+        axisPosition = AxisPosition.Y1_LEFT4;
+        if (setting.isAxisEnable(axisPosition)) {
+            axisSetting = setting.getAxisSetting(axisPosition);
+            addDatasetToPlotMapAxis(xyPlot, 5, 0, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_LEFT,
                     RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
             datasetNo++;
         }
         // Y1 right
-        if (setting.isY1RightEnable()) {
-            axisSetting = setting.getAxisSetting(AxisPosition.Y1_RIGHT);
-            addDatasetToPlot(xyPlot1, 1, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_RIGHT, 
+        axisPosition = AxisPosition.Y1_RIGHT;
+        if (setting.isAxisEnable(axisPosition)) {
+            axisSetting = setting.getAxisSetting(axisPosition);
+            addDatasetToPlot(xyPlot, 1, xyDatasetList.get(datasetNo), AxisLocation.BOTTOM_OR_RIGHT, 
                     RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
             datasetNo++;
         }
 
         // plot 2
         if (setting.getPlotCount() >= 2) {
-            axisSetting = setting.getAxisSetting(AxisPosition.Y2_LEFT);
-            XYPlot xyPlot2 = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_LEFT,
+            axisPosition = AxisPosition.Y2_LEFT;
+            axisSetting = setting.getAxisSetting(axisPosition);
+            xyPlot = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_LEFT,
                     RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
-            combinedDomainXYPlot.add(xyPlot2, (int) Math.round(100 * axisSetting.getWeight()));
+            combinedDomainXYPlot.add(xyPlot, (int) Math.round(100 * axisSetting.getWeight()));
             datasetNo++;
-            if (setting.isY2RightEnable()) {
-                axisSetting = setting.getAxisSetting(AxisPosition.Y2_RIGHT);
-                addDatasetToPlot(xyPlot2, 1, xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_RIGHT, 
+            axisPosition = AxisPosition.Y2_RIGHT;
+            if (setting.isAxisEnable(axisPosition)) {
+                axisSetting = setting.getAxisSetting(axisPosition);
+                addDatasetToPlot(xyPlot, 1, xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_RIGHT, 
                         RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
                 datasetNo++;
             }
@@ -319,14 +262,16 @@ public class ChartDataCreator {
         
         // plot 3
         if (setting.getPlotCount() >= 3) {
-            axisSetting = setting.getAxisSetting(AxisPosition.Y3_LEFT);
-            XYPlot xyPlot3 = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_LEFT, 
+            axisPosition = AxisPosition.Y3_LEFT;
+            axisSetting = setting.getAxisSetting(axisPosition);
+            xyPlot = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_LEFT,
                     RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
-            combinedDomainXYPlot.add(xyPlot3, (int) Math.round(100 * axisSetting.getWeight()));
+            combinedDomainXYPlot.add(xyPlot, (int) Math.round(100 * axisSetting.getWeight()));
             datasetNo++;
-            if (setting.isY3RightEnable()) {
-                axisSetting = setting.getAxisSetting(AxisPosition.Y3_RIGHT);
-                addDatasetToPlot(xyPlot3, 1, xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_RIGHT, 
+            axisPosition = AxisPosition.Y3_RIGHT;
+            if (setting.isAxisEnable(axisPosition)) {
+                axisSetting = setting.getAxisSetting(axisPosition);
+                addDatasetToPlot(xyPlot, 1, xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_RIGHT, 
                         RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
                 datasetNo++;
             }
@@ -334,14 +279,16 @@ public class ChartDataCreator {
 
         // plot 4
         if (setting.getPlotCount() >= 4) {
-            axisSetting = setting.getAxisSetting(AxisPosition.Y4_LEFT);
-            XYPlot xyPlot4 = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_LEFT,
+            axisPosition = AxisPosition.Y4_LEFT;
+            axisSetting = setting.getAxisSetting(axisPosition);
+            xyPlot = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_LEFT,
                     RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
-            combinedDomainXYPlot.add(xyPlot4, (int) Math.round(100 * axisSetting.getWeight()));
+            combinedDomainXYPlot.add(xyPlot, (int) Math.round(100 * axisSetting.getWeight()));
             datasetNo++;
-            if (setting.isY4RightEnable()) {
-                axisSetting = setting.getAxisSetting(AxisPosition.Y4_RIGHT);
-                addDatasetToPlot(xyPlot4, 1, xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_RIGHT, 
+            axisPosition = AxisPosition.Y4_RIGHT;
+            if (setting.isAxisEnable(axisPosition)) {
+                axisSetting = setting.getAxisSetting(axisPosition);
+                addDatasetToPlot(xyPlot, 1, xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_RIGHT, 
                         RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
                 datasetNo++;
             }
@@ -349,14 +296,16 @@ public class ChartDataCreator {
         
         // plot 5
         if (setting.getPlotCount() >= 5) {
-            axisSetting = setting.getAxisSetting(AxisPosition.Y5_LEFT);
-            XYPlot xyPlot5 = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_LEFT,
+            axisPosition = AxisPosition.Y5_LEFT;
+            axisSetting = setting.getAxisSetting(axisPosition);
+            xyPlot = createXYPlot(xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_LEFT,
                     RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
-            combinedDomainXYPlot.add(xyPlot5, (int) Math.round(100 * axisSetting.getWeight()));
+            combinedDomainXYPlot.add(xyPlot, (int) Math.round(100 * axisSetting.getWeight()));
             datasetNo++;
-            if (setting.isY5RightEnable()) {
-                axisSetting = setting.getAxisSetting(AxisPosition.Y5_RIGHT);
-                addDatasetToPlot(xyPlot5, 1, xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_RIGHT, 
+            axisPosition = AxisPosition.Y5_RIGHT;
+            if (setting.isAxisEnable(axisPosition)) {
+                axisSetting = setting.getAxisSetting(axisPosition);
+                addDatasetToPlot(xyPlot, 1, xyDatasetList.get(datasetNo), AxisLocation.TOP_OR_RIGHT, 
                         RendererFactory.createXYItemRenderer(axisSetting, isDateDomainAxis, xyDatasetList.get(datasetNo).getSeriesCount()), axisSetting.getChartType());
                 datasetNo++;
             }
@@ -377,7 +326,7 @@ public class ChartDataCreator {
     }
 
     private static XYPlot createXYPlot(XYDataset dataset, AxisLocation location, XYItemRenderer renderer, ChartType chartType) {
-        if (chartType == ChartType.OHLC || chartType == ChartType.HIGH_LOW) {
+        if (chartType == ChartType.OHLC || chartType == ChartType.OHLC2 || chartType == ChartType.HIGH_LOW) {
             if (dataset instanceof TimeSeriesCollection) {
                 dataset = convertToOHLCDataset((TimeSeriesCollection)dataset);
             } else {
@@ -395,7 +344,7 @@ public class ChartDataCreator {
      * Add dataset to plot using "new" axis
      */
     private static void addDatasetToPlot(XYPlot plot, int index, XYDataset dataset, AxisLocation location, XYItemRenderer renderer, ChartType chartType) {
-        if (chartType == ChartType.OHLC || chartType == ChartType.HIGH_LOW) {
+        if (chartType == ChartType.OHLC || chartType == ChartType.OHLC2 || chartType == ChartType.HIGH_LOW) {
             if (dataset instanceof TimeSeriesCollection) {
                 dataset = convertToOHLCDataset((TimeSeriesCollection)dataset);
             } else {
@@ -415,7 +364,7 @@ public class ChartDataCreator {
      * Add dataset to plot using "existing" axis
      */
     private static void addDatasetToPlotMapAxis(XYPlot plot, int index, int rangeIndex, XYDataset dataset, AxisLocation location, XYItemRenderer renderer, ChartType chartType) {
-        if (chartType == ChartType.OHLC || chartType == ChartType.HIGH_LOW) {
+        if (chartType == ChartType.OHLC || chartType == ChartType.OHLC2 || chartType == ChartType.HIGH_LOW) {
             if (dataset instanceof TimeSeriesCollection) {
                 dataset = convertToOHLCDataset((TimeSeriesCollection)dataset);
             } else {

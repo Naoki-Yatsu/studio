@@ -14,6 +14,7 @@ import org.jfree.chart.ChartRenderingInfo;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.labels.StandardCrosshairLabelGenerator;
 import org.jfree.chart.panel.CrosshairOverlay;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
@@ -28,7 +29,7 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
 
     private static final long serialVersionUID = 1L;
     
-    private ChartRenderingInfo info2;
+    private ChartRenderingInfo info;
     
     private Crosshair xCrosshair;
     private List<Crosshair> yCrosshairs = new ArrayList<>();
@@ -42,7 +43,7 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
             // xCrosshairs
             Field infoFiled = clazz.getDeclaredField("info");
             infoFiled.setAccessible(true);
-            info2 = (ChartRenderingInfo) infoFiled.get(this);
+            info = (ChartRenderingInfo) infoFiled.get(this);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -62,6 +63,7 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
             xAxis = ((XYPlot) plot).getDomainAxis();
             yCrosshairs.add(createCrosshair());
         } else if (plot instanceof CategoryPlot) {
+            
         }
         for (Crosshair crosshair : yCrosshairs) {
             crosshairOverlay.addRangeCrosshair(crosshair);
@@ -69,7 +71,7 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
         
         // xCrosshair
         if (xAxis instanceof DateAxis) {
-            xCrosshair = createTimeCrosshair((DateAxis)xAxis);
+            xCrosshair = createTimeCrosshair((DateAxis)xAxis, (XYPlot)plot);
         } else {
             xCrosshair = createCrosshair();
         }
@@ -82,15 +84,22 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
         addChartMouseListener(this);
     }
     
+    @SuppressWarnings("serial")
     private Crosshair createCrosshair() {
         Crosshair crosshair = new Crosshair(Double.NaN, Color.GRAY, new BasicStroke(0f));
         crosshair.setLabelVisible(true);
         crosshair.setLabelBackgroundPaint(Color.WHITE);
+        crosshair.setLabelGenerator(new StandardCrosshairLabelGenerator() {
+            @Override
+            public String generateLabel(Crosshair crosshair) {
+                return " " + super.generateLabel(crosshair) + " ";
+            }
+        });
         return crosshair;
     }
 
-    private Crosshair createTimeCrosshair(DateAxis dateAxis) {
-        Crosshair crosshair = new TimeCrosshair(Double.NaN, Color.GRAY, new BasicStroke(0f), dateAxis);
+    private Crosshair createTimeCrosshair(DateAxis dateAxis, XYPlot plot) {
+        Crosshair crosshair = new TimeCrosshair(Double.NaN, Color.GRAY, new BasicStroke(0f), dateAxis, plot);
         crosshair.setLabelVisible(true);
         crosshair.setLabelBackgroundPaint(Color.WHITE);
         return crosshair;
@@ -119,6 +128,9 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
             @SuppressWarnings("unchecked")
             List<XYPlot> plots = ((CombinedDomainXYPlot) plot).getSubplots();
             switch (plots.size()) {
+                case 5:
+                    double y5 = DatasetUtilities.findYValue(plots.get(4).getDataset(), 0, x);
+                    yCrosshairs.get(4).setValue(y5);
                 case 4:
                     double y4 = DatasetUtilities.findYValue(plots.get(3).getDataset(), 0, x);
                     yCrosshairs.get(3).setValue(y4);
@@ -144,7 +156,7 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
      * @return The scaled data area.
      */
     public Rectangle2D getScreenDataArea(int subplotIndex) {
-        PlotRenderingInfo plotInfo = this.info2.getPlotInfo();
+        PlotRenderingInfo plotInfo = this.info.getPlotInfo();
         if (plotInfo.getSubplotCount() == 0) {
             return getScreenDataArea();
         } else {

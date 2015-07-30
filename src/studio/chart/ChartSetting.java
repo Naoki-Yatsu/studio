@@ -20,13 +20,15 @@ public class ChartSetting {
     public static final int WINDOW_Y_DEFAULT = 350;
     public static final ChartTheme THEME_DEFAULT = ChartTheme.JFREE;
     
-    public static final boolean NEW_FRAME_DEFAULT = false;
+    public static final boolean TOP_BUTTON_DEFAULT = true;
     public static final boolean REVERSE_RENDERING_DEFAULT = true;
     public static final boolean CROSS_HAIR_DEFAULT = false;
     public static final boolean SCROLL_BAR_DEFAULT = true;
     public static final boolean SCROLL_ADJUST_DEFAULT = true;
     
     public static final double RANGE_DEFAILT = Double.NaN;
+    public static final double RANGE_LENGTH_FIXED = Double.NEGATIVE_INFINITY;
+    
     public static final double GAP_DEFAULT = -5.0d;
     public static final boolean SEPARETE_LEGEND_DEFAULT = false;
     
@@ -36,7 +38,7 @@ public class ChartSetting {
     private int ySize = WINDOW_Y_DEFAULT;
     private ChartTheme theme = THEME_DEFAULT;
     
-    private boolean newFrame = NEW_FRAME_DEFAULT;
+    private boolean topBUtton = TOP_BUTTON_DEFAULT;
     private boolean reverseRendering = REVERSE_RENDERING_DEFAULT;
     private boolean crossHair = CROSS_HAIR_DEFAULT;
     private boolean scrollBar = SCROLL_BAR_DEFAULT;
@@ -65,7 +67,7 @@ public class ChartSetting {
         combinedGap = GAP_DEFAULT;
         separateLegend = SEPARETE_LEGEND_DEFAULT;
 
-        newFrame = NEW_FRAME_DEFAULT;
+        topBUtton = TOP_BUTTON_DEFAULT;
         reverseRendering = REVERSE_RENDERING_DEFAULT;
         crossHair = CROSS_HAIR_DEFAULT;
         scrollBar = SCROLL_BAR_DEFAULT;
@@ -84,44 +86,10 @@ public class ChartSetting {
      */
     public int getDatasetCount() {
         int datasetCount = 1;
-        if (isY1Left1Enable()) {
-            datasetCount++;
-        }
-        if (isY1Left2Enable()) {
-            datasetCount++;
-        }
-        if (isY1Left3Enable()) {
-            datasetCount++;
-        }
-        if (isY1Left4Enable()) {
-            datasetCount++;
-        }
-        if (isY1RightEnable()) {
-            datasetCount++;
-        }
-        if (isY2LeftEnable()) {
-            datasetCount++;
-        }
-        if (isY2RightEnable()) {
-            datasetCount++;
-        }
-        if (isY3LeftEnable()) {
-            datasetCount++;
-        }
-        if (isY3RightEnable()) {
-            datasetCount++;
-        }
-        if (isY4LeftEnable()) {
-            datasetCount++;
-        }
-        if (isY4RightEnable()) {
-            datasetCount++;
-        }
-        if (isY5LeftEnable()) {
-            datasetCount++;
-        }
-        if (isY5RightEnable()) {
-            datasetCount++;
+        for (AxisPosition axisPosition : AxisPosition.AXIS_SUB_ALL) {
+            if (isAxisEnable(axisPosition)) {
+                datasetCount++;
+            }
         }
         return datasetCount;
     }
@@ -132,13 +100,14 @@ public class ChartSetting {
      * @return
      */
     public int getPlotCount() {
-        if (isY5LeftEnable()) {
+        // check only left axis
+        if (isAxisEnable(AxisPosition.Y5_LEFT)) {
             return 5;
-        } else if (isY4LeftEnable()) {
+        } else if (isAxisEnable(AxisPosition.Y4_LEFT)) {
             return 4;
-        } else if (isY3LeftEnable()) {
+        } else if (isAxisEnable(AxisPosition.Y3_LEFT)) {
             return 3;
-        } else if (isY2LeftEnable()) {
+        } else if (isAxisEnable(AxisPosition.Y2_LEFT)) {
             return 2;
         }
         return 1;
@@ -149,44 +118,12 @@ public class ChartSetting {
      * 
      * @return
      */
-    public boolean isY1Left1Enable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y1_LEFT1).getColumnName()) ? false : true;
-    }
-    public boolean isY1Left2Enable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y1_LEFT2).getColumnName()) ? false : true;
-    }
-    public boolean isY1Left3Enable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y1_LEFT3).getColumnName()) ? false : true;
-    }
-    public boolean isY1Left4Enable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y1_LEFT4).getColumnName()) ? false : true;
-    }
-    public boolean isY1RightEnable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y1_RIGHT).getColumnName()) ? false : true;
-    }
-    public boolean isY2LeftEnable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y2_LEFT).getColumnName()) ? false : true;
-    }
-    public boolean isY2RightEnable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y2_RIGHT).getColumnName()) ? false : true;
-    }
-    public boolean isY3LeftEnable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y3_LEFT).getColumnName()) ? false : true;
-    }
-    public boolean isY3RightEnable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y3_RIGHT).getColumnName()) ? false : true;
-    }
-    public boolean isY4LeftEnable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y4_LEFT).getColumnName()) ? false : true;
-    }
-    public boolean isY4RightEnable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y4_RIGHT).getColumnName()) ? false : true;
-    }
-    public boolean isY5LeftEnable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y5_LEFT).getColumnName()) ? false : true;
-    }
-    public boolean isY5RightEnable() {
-        return StringUtils.isBlank(getAxisSetting(AxisPosition.Y5_RIGHT).getColumnName()) ? false : true;
+    public boolean isAxisEnable(AxisPosition axisPosition) {
+        if (axisPosition == AxisPosition.X1 || axisPosition == AxisPosition.Y1) {
+            return true;
+        } else {
+            return StringUtils.isBlank(getAxisSetting(axisPosition).getColumnName()) ? false : true;
+        }
     }
 
    
@@ -199,34 +136,25 @@ public class ChartSetting {
         // Y1 add always
         lengthList.add(getAxisSetting(AxisPosition.Y1).getRangeLength());
         
-        if (isY1RightEnable()) {
-            lengthList.add(getAxisSetting(AxisPosition.Y1_RIGHT).getRangeLength());
-        }
-        if (isY2LeftEnable()) {
-            lengthList.add(getAxisSetting(AxisPosition.Y2_LEFT).getRangeLength());
-        }
-        if (isY2RightEnable()) {
-            lengthList.add(getAxisSetting(AxisPosition.Y2_RIGHT).getRangeLength());
-        }
-        if (isY3LeftEnable()) {
-            lengthList.add(getAxisSetting(AxisPosition.Y3_LEFT).getRangeLength());
-        }
-        if (isY3RightEnable()) {
-            lengthList.add(getAxisSetting(AxisPosition.Y3_RIGHT).getRangeLength());
-        }
-        if (isY4LeftEnable()) {
-            lengthList.add(getAxisSetting(AxisPosition.Y4_LEFT).getRangeLength());
-        }
-        if (isY4RightEnable()) {
-            lengthList.add(getAxisSetting(AxisPosition.Y4_RIGHT).getRangeLength());
-        }
-        if (isY5LeftEnable()) {
-            lengthList.add(getAxisSetting(AxisPosition.Y5_LEFT).getRangeLength());
-        }
-        if (isY5RightEnable()) {
-            lengthList.add(getAxisSetting(AxisPosition.Y5_RIGHT).getRangeLength());
+        // without Y1_LEFT1-4
+        for (AxisPosition axisPosition : AxisPosition.AXIS_SUB_WITHOUT_Y1LEFT) {
+            if (isAxisEnable(axisPosition)) {
+                if (isFixedRange(axisPosition)) {
+                    lengthList.add(RANGE_LENGTH_FIXED); 
+                } else {
+                    lengthList.add(getAxisSetting(axisPosition).getRangeLength()); 
+                }
+            }
         }
         return lengthList;
+    }
+    
+    private boolean isFixedRange(AxisPosition axisPosition) {
+        // If both of range min/max are set, the range is fixed.
+        if (!Double.isNaN(getAxisSetting(axisPosition).getRangeMin()) && !Double.isNaN(getAxisSetting(axisPosition).getRangeMax())) {
+            return true;
+        }
+        return false;
     }
     
     // //////////////////////////////////////
@@ -274,11 +202,11 @@ public class ChartSetting {
         this.separateLegend = separateLegend;
     }
     
-    public boolean isNewFrame() {
-        return newFrame;
+    public boolean isTopButton() {
+        return topBUtton;
     }
-    public void setNewFrame(boolean newFrame) {
-        this.newFrame = newFrame;
+    public void setTopButton(boolean topBUtton) {
+        this.topBUtton = topBUtton;
     }
     public boolean isReverseRendering() {
         return reverseRendering;
@@ -329,6 +257,7 @@ public class ChartSetting {
         private double rangeMin;
         private double rangeMax;
         private double rangeLength;
+        private double tickUnit;
 
         // Include zero
         private boolean includeZero;
@@ -389,6 +318,12 @@ public class ChartSetting {
         }
         public void setRangeLength(double rangeLength) {
             this.rangeLength = rangeLength;
+        }
+        public double getTickUnit() {
+            return tickUnit;
+        }
+        public void setTickUnit(double tickUnit) {
+            this.tickUnit = tickUnit;
         }
         public boolean isIncludeZero() {
             return includeZero;

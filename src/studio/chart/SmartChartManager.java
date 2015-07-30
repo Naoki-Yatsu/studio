@@ -3,20 +3,21 @@ package studio.chart;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Frame;
-import java.awt.event.KeyListener;
+import java.awt.Rectangle;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 
 import org.apache.commons.lang3.time.DateUtils;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
@@ -48,11 +49,6 @@ public class SmartChartManager {
     private SmartChartPanel settingPanel;
     private ChartSetting setting;
     
-    private JFrame chartFrame;
-    // private ChartPanel chartPanel;
-    private JPanel chartPanel;
-    private JFreeChart chart;
-    
     private Studio studio;
     
     // //////////////////////////////////////
@@ -70,16 +66,6 @@ public class SmartChartManager {
         this.studio = studio;
         this.setting = new ChartSetting();
         this.settingPanel = new SmartChartPanel(this, setting);
-        
-        // setup each panel
-        chartFrame = creatChartFrame();
-    }
-    
-    private JFrame creatChartFrame() {
-        JFrame newFrame = new JFrame("Studio for kdb+ [smart chart]");
-        newFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        newFrame.setIconImage(Util.getImage(Config.imageBase2 + "chart_24.png").getImage());
-        return newFrame;
     }
     
     public void showPanel() {
@@ -97,84 +83,101 @@ public class SmartChartManager {
     /**
      * show chart using settings
      */
-    public void showChart() {
+    public boolean showChart() {
         KTableModel table = studio.getKTableModel();
         if (table != null) {
-            createChart(table);
+            return createChart(table);
         } else {
             JOptionPane.showMessageDialog(settingPanel.getFrame(), "No table for creating chart.", "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
+            return false;
         }
     }
-
-    public void createChart(KTableModel table) {
+    
+    public boolean showChart(Rectangle bounds, Dimension size) {
+        KTableModel table = studio.getKTableModel();
+        if (table != null) {
+            return createChart(table, bounds, size);
+        } else {
+            JOptionPane.showMessageDialog(settingPanel.getFrame(), "No table for creating chart.", "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+    }
+    
+    public boolean createChart(KTableModel table) {
+        return createChart(table, null, null);
+    }
+    
+    public boolean createChart(KTableModel table, Rectangle bounds, Dimension chartSize) {
         // check row limit
         if (!Util.checkItemCountForGraph(table)) {
             JOptionPane.showMessageDialog(settingPanel.getFrame(), "Over max count limit = " + 
                     Config.getInstance().getGraphMaxCount() + " (row count * column count). \n" + 
                     "If you change limit, please set config graph.maxcount.", "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
-            return;
+            return false;
         }
         
         // Create Chart
-        chart = ChartDataCreator.createChart(table, setting);
-        
-        // Chart Setting
-        if (chart != null) {
-            // save size for restore
-            int tmpWidth = 0;
-            int tmpHeight = 0;
-            if (setting.isNewFrame()) {
-                chartFrame = creatChartFrame();
-            } else {
-                if (chartPanel != null && chartFrame.isVisible()) {
-                    tmpWidth = chartPanel.getWidth();
-                    tmpHeight = chartPanel.getHeight();
-                }
-            }
-            
-            // add overlay
-            if (setting.isCrossHair()) {
-                chartPanel = new CrosshairOverlayChartPanel(chart);
-            } else {
-                chartPanel = new ChartPanel(chart);
-            }
-            ((ChartPanel)chartPanel).setMouseZoomable(true, false);
-            
-            // wrap scroll bar panel
-            if (setting.isScrollBar()) {
-                chartPanel = new ChartScrollPanel((ChartPanel)chartPanel, setting.isScrollAdjust(), setting.getRangeLengthList());
-                chartFrame.addKeyListener((KeyListener) chartPanel);
-            }
-            
-            // update axis
-            updateChart();
-            if (!setting.isNewFrame() && tmpWidth > 0 && tmpHeight > 0) {
-                // when use same frame, restore window size
-                changeWindowSize(tmpWidth, tmpHeight);
-            }
-            
-            // Set Frame
-            chartFrame.setContentPane(chartPanel);
-            chartFrame.pack();
-            chartFrame.setVisible(true);
-            chartFrame.requestFocus();
-            chartFrame.toFront();
-            chartFrame.setState(Frame.NORMAL);
-        } else {
+        JFreeChart chart = ChartDataCreator.createChart(table, setting);
+        if (chart == null) {
             throw new RuntimeException("No chart was created.");
         }
+            
+        // Setup Chart Panel
+        ChartPanel chartPanel = null;
+            
+        // add overlay
+        if (setting.isCrossHair()) {
+            chartPanel = new CrosshairOverlayChartPanel(chart);
+        } else {
+            chartPanel = new ChartPanel(chart);
+        }
+        chartPanel.setMouseZoomable(true, false);
+        
+        // Set Frame
+        CustomChartFrame chartFrame = new CustomChartFrame("Studio for kdb+ [smart chart]", this, setting.isTopButton());
+        if (setting.isScrollBar()) {
+            chartFrame.setChartPanelScroll(chartPanel, setting.isScrollAdjust(), setting.getRangeLengthList());
+        } else {
+            chartFrame.setChartPanel(chartPanel);
+        }
+        
+        // update axis
+        axisUpdate(chartPanel);
+        
+        // restore size (create from chart panel)
+        if (bounds != null) {
+            chartFrame.setBounds(bounds);
+        }
+        if (chartSize != null) {
+            chartPanel.setPreferredSize(chartSize);
+        } else {
+            chartPanel.setPreferredSize(new Dimension(setting.getxSize(), setting.getySize()));
+        }
+        
+        chartFrame.pack();
+        chartFrame.setVisible(true);
+        chartFrame.requestFocus();
+        chartFrame.toFront();
+        chartFrame.setState(Frame.NORMAL);
+        return true;
     }
     
     /**
      * Update Window, Label and Range
      */
-    public void updateChart() {
+    public void axisUpdate(ChartPanel chartPanel) {
+        JFreeChart chart = chartPanel.getChart();
+        if (chart == null) {
+            JOptionPane.showMessageDialog(settingPanel.getFrame(), "No chart.", "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
         // theme
         setting.getTheme().setTheme(chart);
 
         // Window
         chart.setTitle(setting.getTitle());
-        changeWindowSize(setting.getxSize(), setting.getySize());
+        // changeWindowSize(chartPanel, setting.getxSize(), setting.getySize());
         
         // Plot Rendering Order
         Plot plot = chart.getPlot();
@@ -216,7 +219,7 @@ public class SmartChartManager {
                     min = max - length;
                 }
             }
-            setupAxis(axis, x1Setting.getLabel(), min, max, x1Setting.isIncludeZero());
+            setupAxis(axis, x1Setting.getLabel(), min, max, x1Setting.getTickUnit(), x1Setting.isIncludeZero());
         } else if (plot instanceof CategoryPlot) {
             chart.getCategoryPlot().getDomainAxis().setLabel(x1Setting.getLabel());
         }
@@ -230,47 +233,47 @@ public class SmartChartManager {
                 case 5:
                     XYPlot plot5 = plots.get(4);
                     ChartAxisSetting ySetting = setting.getAxisSetting(AxisPosition.Y5_LEFT);
-                    setupAxis(plot5.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.isIncludeZero());
+                    setupAxis(plot5.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.getTickUnit(), ySetting.isIncludeZero());
                     setupPlot(plot5, x1Setting.getMarkerLines(), ySetting.getMarkerLines());
                     if (plot5.getRangeAxisCount() == 2) {
                         ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y5_RIGHT);
-                        setupAxis(plot5.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), rightSetting.isIncludeZero());
+                        setupAxis(plot5.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), ySetting.getTickUnit(), rightSetting.isIncludeZero());
                     }
                 case 4:
                     XYPlot plot4 = plots.get(3);
                     ySetting = setting.getAxisSetting(AxisPosition.Y4_LEFT);
-                    setupAxis(plot4.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.isIncludeZero());
+                    setupAxis(plot4.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.getTickUnit(), ySetting.isIncludeZero());
                     setupPlot(plot4, x1Setting.getMarkerLines(), ySetting.getMarkerLines());
                     if (plot4.getRangeAxisCount() == 2) {
                         ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y4_RIGHT);
-                        setupAxis(plot4.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), rightSetting.isIncludeZero());
+                        setupAxis(plot4.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), ySetting.getTickUnit(), rightSetting.isIncludeZero());
                     }
                 case 3:
                     XYPlot plot3 = plots.get(2);
                     ySetting = setting.getAxisSetting(AxisPosition.Y3_LEFT);
-                    setupAxis(plot3.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.isIncludeZero());
+                    setupAxis(plot3.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.getTickUnit(), ySetting.isIncludeZero());
                     setupPlot(plot3, x1Setting.getMarkerLines(), ySetting.getMarkerLines());
                     if (plot3.getRangeAxisCount() == 2) {
                         ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y3_RIGHT);
-                        setupAxis(plot3.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), rightSetting.isIncludeZero());
+                        setupAxis(plot3.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), ySetting.getTickUnit(), rightSetting.isIncludeZero());
                     }
                 case 2:
                     XYPlot plot2 = plots.get(1);
                     ySetting = setting.getAxisSetting(AxisPosition.Y2_LEFT);
-                    setupAxis(plot2.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.isIncludeZero());
+                    setupAxis(plot2.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.getTickUnit(), ySetting.isIncludeZero());
                     setupPlot(plot2, x1Setting.getMarkerLines(), ySetting.getMarkerLines());
                     if (plot2.getRangeAxisCount() == 2) {
                         ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y2_RIGHT);
-                        setupAxis(plot2.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), rightSetting.isIncludeZero());
+                        setupAxis(plot2.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), ySetting.getTickUnit(), rightSetting.isIncludeZero());
                     }
                 default:
                     XYPlot plot1 = plots.get(0);
                     ySetting = setting.getAxisSetting(AxisPosition.Y1);
-                    setupAxis(plot1.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.isIncludeZero());
+                    setupAxis(plot1.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.getTickUnit(), ySetting.isIncludeZero());
                     setupPlot(plot1, x1Setting.getMarkerLines(), ySetting.getMarkerLines());
                     if (plot1.getRangeAxisCount() == 2) {
                         ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y1_RIGHT);
-                        setupAxis(plot1.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), rightSetting.isIncludeZero());
+                        setupAxis(plot1.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), ySetting.getTickUnit(), rightSetting.isIncludeZero());
                     }
                     break;
             }
@@ -279,23 +282,24 @@ public class SmartChartManager {
             // one plot
             XYPlot xyPlot = (XYPlot) plot;
             ChartAxisSetting ySetting = setting.getAxisSetting(AxisPosition.Y1);
-            setupAxis(xyPlot.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.isIncludeZero());
+            setupAxis(xyPlot.getRangeAxis(), ySetting.getLabel(), ySetting.getRangeMin(), ySetting.getRangeMax(), ySetting.getTickUnit(), ySetting.isIncludeZero());
             setupPlot(xyPlot, x1Setting.getMarkerLines(), ySetting.getMarkerLines());
             if (xyPlot.getRangeAxisCount() == 2) {
                 ChartAxisSetting rightSetting = setting.getAxisSetting(AxisPosition.Y1_RIGHT);
-                setupAxis(xyPlot.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), rightSetting.isIncludeZero());
+                setupAxis(xyPlot.getRangeAxis(1), rightSetting.getLabel(), rightSetting.getRangeMin(), rightSetting.getRangeMax(), ySetting.getTickUnit(), rightSetting.isIncludeZero());
             }
-
         } else if (plot instanceof CategoryPlot) {
             // TBD
         }
     }
     
+    
+    
+    
     /**
      * fill all axis range using current min/max
      */
-    public void fillCurrentRangeAll() {
-        // clear all ranges
+    public void fillCurrentRange(JFreeChart chart) {
         if (chart == null) {
             JOptionPane.showMessageDialog(settingPanel.getFrame(), "No chart.", "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
             return;
@@ -363,12 +367,11 @@ public class SmartChartManager {
     }
 
     
+//    private void changeWindowSize(JPanel panel, int width, int height) {
+//        panel.setPreferredSize(new Dimension(width, height));
+//    }
     
-    private void changeWindowSize(int width, int height) {
-        chartPanel.setPreferredSize(new Dimension(width, height));
-    }
-    
-    private void setupAxis(ValueAxis axis, String label, double lower, double upper, boolean includeZero) {
+    private void setupAxis(ValueAxis axis, String label, double lower, double upper, double unit, boolean includeZero) {
         // label
         axis.setLabel(label);
         
@@ -387,7 +390,11 @@ public class SmartChartManager {
                 upper = Double.isNaN(upper)? axis.getRange().getUpperBound() : upper;
                 axis.setRange(lower, upper);
             }
-            
+            // Unit
+            if (!Double.isNaN(unit)) {
+                ((NumberAxis) axis).setTickUnit(new NumberTickUnit(unit), true, true);
+                ((NumberAxis) axis).setNumberFormatOverride(new DecimalFormat(BigDecimal.valueOf(unit).toPlainString().replaceFirst("0+$", "").replaceAll("[1-9]", "0")));
+            }
             // include zero
             ((NumberAxis)axis).setAutoRangeIncludesZero(includeZero);
             
@@ -465,5 +472,8 @@ public class SmartChartManager {
         }
     }
     
+    public SmartChartPanel getSettingPanel() {
+        return settingPanel;
+    }
     
 }

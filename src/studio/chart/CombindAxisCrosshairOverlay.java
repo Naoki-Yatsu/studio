@@ -68,8 +68,7 @@ public class CombindAxisCrosshairOverlay extends CrosshairOverlay {
                 double xx = xAxis.valueToJava2D(x, dataArea, xAxisEdge);
                 if (plot.getOrientation() == PlotOrientation.VERTICAL) {
                     drawVerticalCrosshair(g2, dataArea, xx, ch);
-                }
-                else {
+                } else {
                     drawHorizontalCrosshair(g2, dataArea, xx, ch);
                 }
             }
@@ -83,6 +82,9 @@ public class CombindAxisCrosshairOverlay extends CrosshairOverlay {
             List<XYPlot> plots = ((CombinedDomainXYPlot) plot).getSubplots();
             int subplotIndex = -1;
             switch (plots.size()) {
+                case 5:
+                    subplotIndex = 4;
+                    paintOverlayRange(g2, overlayChartPanel.getScreenDataArea(subplotIndex), yCrosshairs2.get(subplotIndex), plots.get(subplotIndex));
                 case 4:
                     subplotIndex = 3;
                     paintOverlayRange(g2, overlayChartPanel.getScreenDataArea(subplotIndex), yCrosshairs2.get(subplotIndex), plots.get(subplotIndex));

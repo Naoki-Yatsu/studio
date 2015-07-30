@@ -77,7 +77,7 @@ public class SmartChartPanel extends JPanel {
     
     // set window size by OS
     static {
-        int panelWidthBase = 830;
+        int panelWidthBase = 900;
         int panelHeightBase = 240;
         if(System.getProperty("os.name","").contains("OS X")){ 
             PANEL_WIDTH = panelWidthBase + 120;
@@ -109,10 +109,10 @@ public class SmartChartPanel extends JPanel {
     
     // Button
     private JButton chartButton = new JButton("Create Chart");
-    private JButton updateButton = new JButton("Update Axis");
+    // private JButton updateButton = new JButton("Update Axis");
     private JButton clearButton = new JButton("Clear Settings");
     private JButton columnNameButton = new JButton("Update Separator");
-    private JButton fillRangeButton = new JButton("Fill Range");
+    // private JButton fillRangeButton = new JButton("Fill Range");
     private JButton clearRangeButton = new JButton("Clear Range");
     private JTextField gapField = new GuideTextField("Multi-Gap(-5.0)", TEXT_FIELD_COLUMNS_LONG);
     private JCheckBox separateLegendCheckBox = new JCheckBox("Sep.Leg.", ChartSetting.SEPARETE_LEGEND_DEFAULT);
@@ -122,11 +122,13 @@ public class SmartChartPanel extends JPanel {
     private JTextField xSizeField = new GuideTextField("X size", String.valueOf(ChartSetting.WINDOW_X_DEFAULT), TEXT_FIELD_COLUMNS_NORMAL);
     private JTextField ySizeField = new GuideTextField("Y size", String.valueOf(ChartSetting.WINDOW_Y_DEFAULT), TEXT_FIELD_COLUMNS_NORMAL);
     private JComboBox<ChartTheme> themeCombo = new JComboBox<>(ChartTheme.values());
-    private JCheckBox newChartFrameCheckBox = new JCheckBox("New Frame", ChartSetting.NEW_FRAME_DEFAULT);
+    private JCheckBox topButtonCheckBox = new JCheckBox("Top Button", ChartSetting.TOP_BUTTON_DEFAULT);
     private JCheckBox reverseRenderingOrderCheckBox = new JCheckBox("Rev-Rendering", ChartSetting.REVERSE_RENDERING_DEFAULT);
     private JCheckBox crosshairOverlayCheckBox = new JCheckBox("Cross-hair", ChartSetting.CROSS_HAIR_DEFAULT);
     private JCheckBox scrollBarCheckBox = new JCheckBox("Scroll", ChartSetting.SCROLL_BAR_DEFAULT);
     private JCheckBox scrollAdjustRangeCheckBox = new JCheckBox("Scroll Adjust", ChartSetting.SCROLL_ADJUST_DEFAULT);
+    private JLabel serapator1Label = new JLabel(" | ");
+    private JLabel serapator2Label = new JLabel(" | ");
     
     // Open/Close label
     private JLabel y1Left2Label = new JLabel(" + Y1 Left");
@@ -144,7 +146,7 @@ public class SmartChartPanel extends JPanel {
     private Map<AxisPosition, AddtionalAxisPanel> axisPanelMap = new EnumMap<>(AxisPosition.class);
     private AddtionalAxisPanelDefault xPanel = new AddtionalAxisPanelDefault("X", AxisPosition.X1, null);
     private AddtionalAxisPanelDefault y1Panel = new AddtionalAxisPanelDefault("Y1", AxisPosition.Y1, null);
-    private AddtionalAxisPanelY1Left y1LeftPanel = new AddtionalAxisPanelY1Left("Y1 Left", AxisPosition.Y1_LEFT1, COLOR1);
+    private AddtionalAxisPanelY1Left y1LeftPanel = new AddtionalAxisPanelY1Left("Y1 Left (Additional)", AxisPosition.Y1_LEFT1, COLOR1);
     private AddtionalAxisPanelDefault y1RightPanel = new AddtionalAxisPanelDefault("Y1 Right", AxisPosition.Y1_RIGHT, COLOR1);
     private AddtionalAxisPanelDefault y2LeftPanel = new AddtionalAxisPanelDefault("Y2 Left", AxisPosition.Y2_LEFT, COLOR2);
     private AddtionalAxisPanelDefault y2RightPanel = new AddtionalAxisPanelDefault("Y2 Right", AxisPosition.Y2_RIGHT, COLOR2);
@@ -175,6 +177,7 @@ public class SmartChartPanel extends JPanel {
         // frame.setVisible(true);
         // frame.requestFocus();
         // frame.toFront();
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
     
     public void showPanel() {
@@ -191,7 +194,7 @@ public class SmartChartPanel extends JPanel {
     /**
      * Copy all settings to ChartSetting instance
      */
-    private void copySettings() {
+    protected void setupSettings() {
         // Window
         setting.setTitle(titleField.getText());
         setting.setxSize(evalWidnowSize(xSizeField.getText(), true));
@@ -200,7 +203,7 @@ public class SmartChartPanel extends JPanel {
         setting.setCombinedGap(evalDoubleField(gapField, ChartSetting.GAP_DEFAULT));
         setting.setSeparateLegend(separateLegendCheckBox.isSelected());
 
-        setting.setNewFrame(newChartFrameCheckBox.isSelected());
+        setting.setTopButton(topButtonCheckBox.isSelected());
         setting.setReverseRendering(reverseRenderingOrderCheckBox.isSelected());
         setting.setCrossHair(crosshairOverlayCheckBox.isSelected());
         setting.setScrollBar(scrollBarCheckBox.isSelected());
@@ -217,6 +220,7 @@ public class SmartChartPanel extends JPanel {
                 axisSetting.setRangeMin(evalDoubleField(panel.minField));
                 axisSetting.setRangeMax(evalDoubleField(panel.maxField));
                 axisSetting.setRangeLength(evalDoubleField(panel.lengthField));
+                axisSetting.setTickUnit(evalDoubleField(panel.unitField));
                 axisSetting.setIncludeZero(panel.includeZeroCheckbox.isSelected());
                 axisSetting.setMarkerLines(evalMarkerLine(panel.markerLineField.getText()));
                 axisSetting.setChartType((ChartType) panel.chartCombo.getSelectedItem());
@@ -260,7 +264,7 @@ public class SmartChartPanel extends JPanel {
         ((GuideTextField) xSizeField).clearText(String.valueOf(ChartSetting.WINDOW_X_DEFAULT));
         ((GuideTextField) ySizeField).clearText(String.valueOf(ChartSetting.WINDOW_Y_DEFAULT));
         themeCombo.setSelectedIndex(0);
-        newChartFrameCheckBox.setSelected(ChartSetting.NEW_FRAME_DEFAULT);
+        topButtonCheckBox.setSelected(ChartSetting.TOP_BUTTON_DEFAULT);
         reverseRenderingOrderCheckBox.setSelected(ChartSetting.REVERSE_RENDERING_DEFAULT);
         crosshairOverlayCheckBox.setSelected(ChartSetting.CROSS_HAIR_DEFAULT);
         scrollBarCheckBox.setSelected(ChartSetting.SCROLL_BAR_DEFAULT);
@@ -285,7 +289,7 @@ public class SmartChartPanel extends JPanel {
         y5RightPanel.clearSetting();
         
         // reset setting
-        copySettings();
+        setupSettings();
     }
 
 
@@ -294,7 +298,7 @@ public class SmartChartPanel extends JPanel {
      * @param axis
      * @param axisPosition
      */
-    public void fillRangeToField(ValueAxis axis, AxisPosition axisPosition) {
+    protected void fillRangeToField(ValueAxis axis, AxisPosition axisPosition) {
         if (!(axisPanelMap.get(axisPosition) instanceof AddtionalAxisPanelDefault)) {
             return;
         }
@@ -345,7 +349,7 @@ public class SmartChartPanel extends JPanel {
         }
     }
     
-    private void clearAllRange() {
+    protected void clearAllRange() {
         // Axis Items
         for (Entry<AxisPosition, AddtionalAxisPanel> entry : axisPanelMap.entrySet()) {
             if (!(entry.getValue() instanceof AddtionalAxisPanelDefault)) {
@@ -506,24 +510,25 @@ public class SmartChartPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    copySettings();
+                    System.gc();
+                    setupSettings();
                     manager.showChart();
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(frame, getStackTraceString(ex), "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
-        updateButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    copySettings();
-                    manager.updateChart();
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(frame, getStackTraceString(ex), "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
+//        updateButton.addActionListener(new ActionListener() {
+//            @Override
+//            public void actionPerformed(ActionEvent e) {
+//                try {
+//                    setupSettings();
+//                    manager.axisUpdate(null);
+//                } catch (Exception ex) {
+//                    JOptionPane.showMessageDialog(frame, getStackTraceString(ex), "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
+//                }
+//            }
+//        });
         clearButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -544,17 +549,6 @@ public class SmartChartPanel extends JPanel {
                 }
             }
         });
-        fillRangeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    clearAllRange();
-                    manager.fillCurrentRangeAll();
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(frame, getStackTraceString(ex), "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
         clearRangeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -565,6 +559,12 @@ public class SmartChartPanel extends JPanel {
                 }
             }
         });
+        
+        //
+        // setup components
+        //
+        chartButton.setPreferredSize(new Dimension(120, 60));
+        
         
         //
         // Add components
@@ -590,10 +590,9 @@ public class SmartChartPanel extends JPanel {
 
         // Button
         chartButtonPanel.add(chartButton);
-        chartButtonPanel.add(updateButton);
+//        chartButtonPanel.add(updateButton);
         
         clearButtonPanel.add(clearButton);
-        clearButtonPanel.add(fillRangeButton);
         clearButtonPanel.add(clearRangeButton);
         
         multiAxisPanel.add(columnNameButton);
@@ -609,13 +608,15 @@ public class SmartChartPanel extends JPanel {
         windowPanelInner1.add(xSizeField);
         windowPanelInner1.add(ySizeField);
         windowPanelInner1.add(themeCombo);
-        windowPanelInner1.add(newChartFrameCheckBox);
+        windowPanelInner1.add(topButtonCheckBox);
         
         // window2
         windowPanelInner2.add(reverseRenderingOrderCheckBox);
         windowPanelInner2.add(crosshairOverlayCheckBox);
         windowPanelInner2.add(scrollBarCheckBox);
         windowPanelInner2.add(scrollAdjustRangeCheckBox);
+        windowPanelInner2.add(serapator1Label);
+        windowPanelInner2.add(serapator2Label);
         
         // Y Open/Close
         yOpenCloseWrapperPanel.add(yOpenClosePanel);
@@ -700,8 +701,8 @@ public class SmartChartPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = 0;
         layout.setConstraints(chartButton, gbc);
-        gbc.gridy++;
-        layout.setConstraints(updateButton, gbc);
+//        gbc.gridy++;
+//        layout.setConstraints(updateButton, gbc);
         
         // Y Open/Close
         yOpenClosePanel.setBorder(new TitledBorder("Open/Close Addtional Panel"));
@@ -758,8 +759,6 @@ public class SmartChartPanel extends JPanel {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.gridx = 0;
         gbc.gridy = 0;
-        layout.setConstraints(fillRangeButton, gbc);
-        gbc.gridx++;
         layout.setConstraints(clearRangeButton, gbc);
         gbc.gridx++;
         gbc.weightx = 1.0d;
@@ -795,7 +794,7 @@ public class SmartChartPanel extends JPanel {
         gbc.gridx++;
         layout.setConstraints(themeCombo, gbc);
         gbc.gridx++;
-        layout.setConstraints(newChartFrameCheckBox, gbc);
+        layout.setConstraints(topButtonCheckBox, gbc);
         
         // window panel 2
         layout = new GridBagLayout();
@@ -806,7 +805,11 @@ public class SmartChartPanel extends JPanel {
         gbc.gridy = 0;
         layout.setConstraints(reverseRenderingOrderCheckBox, gbc);
         gbc.gridx++;
+        layout.setConstraints(serapator1Label, gbc);
+        gbc.gridx++;
         layout.setConstraints(crosshairOverlayCheckBox, gbc);
+        gbc.gridx++;
+        layout.setConstraints(serapator2Label, gbc);
         gbc.gridx++;
         layout.setConstraints(scrollBarCheckBox, gbc);
         gbc.gridx++;

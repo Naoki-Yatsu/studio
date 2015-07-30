@@ -1,6 +1,8 @@
 package studio.chart;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Paint;
 import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.GeneralPath;
@@ -21,6 +23,7 @@ import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.urls.StandardCategoryURLGenerator;
 import org.jfree.chart.urls.StandardXYURLGenerator;
+import org.jfree.data.xy.OHLCDataset;
 import org.jfree.ui.TextAnchor;
 
 import studio.chart.ChartSetting.ChartAxisSetting;
@@ -38,6 +41,7 @@ public class RendererFactory {
         
         switch (chartType) {
             case LINE:
+            case LINE_GRAD:
                 renderer = createLineChartRenderer(tooltips, urls, false);
                 break;
             case LINE_MARK:
@@ -61,11 +65,14 @@ public class RendererFactory {
                 break;
             case SCATTER_DT:
                 renderer = createScatterChartRenderer(tooltips, urls);
-                changeShapeArrow((XYLineAndShapeRenderer) renderer, seriesCount); 
+                changeShapeDot((XYLineAndShapeRenderer) renderer, seriesCount); 
                 break;
 
             case OHLC:
                 renderer = createCandlestickRenderer(seriesColor);
+                break;
+            case OHLC2:
+                renderer = createCandlestickRenderer2(seriesColor);
                 break;
                 
             case HIGH_LOW:
@@ -79,9 +86,11 @@ public class RendererFactory {
         // set color
         if (chartType == ChartType.SCATTER_UD) {
             setSeriesColorForScatterUD(renderer, seriesColor, seriesCount);
+        } else if (chartType == ChartType.LINE_GRAD) {
+            setSeriesColorForLineGradation(renderer, seriesColor, seriesCount);
         } else {
             setSeriesColor(renderer, seriesColor, seriesCount);
-        }
+        }   
         
         return renderer;
     }
@@ -128,13 +137,15 @@ public class RendererFactory {
 
     public static CandlestickRenderer createCandlestickRenderer(Color color) {
         CandlestickRenderer candlestickRenderer = new CandlestickRenderer();
-        candlestickRenderer.setAutoWidthGap(5.0);
+        // candlestickRenderer.setAutoWidthGap(5.0);
         candlestickRenderer.setUseOutlinePaint(true);
         candlestickRenderer.setSeriesOutlinePaint(0, Color.DARK_GRAY);
+        candlestickRenderer.setBaseOutlineStroke(new BasicStroke(1));
         
         if (color != null) {
             candlestickRenderer.setUpPaint(color);
-            candlestickRenderer.setDownPaint(color.darker());
+            //candlestickRenderer.setDownPaint(color.darker());
+            candlestickRenderer.setDownPaint(SeriesColor.rotateColor(color).darker());
         }
         
         //// Following settings also works.
@@ -145,6 +156,32 @@ public class RendererFactory {
     }
     
     
+    public static CandlestickRenderer createCandlestickRenderer2(Color color) {
+        CandlestickRenderer candlestickRenderer = new CandlestickRenderer() {
+            private static final long serialVersionUID = 1L;
+            @Override
+            public Paint getItemPaint(int row, int column) {
+                OHLCDataset dataset = (OHLCDataset)getPlot().getDataset();
+                double open = dataset.getOpenValue(row, column);
+                double close = dataset.getCloseValue(row, column);
+                if(open <= close){
+                    return getUpPaint();
+                }else{
+                    return getDownPaint();
+                }
+            }
+            
+        };
+        candlestickRenderer.setUseOutlinePaint(false);
+        //candlestickRenderer.setCandleWidth(2.0);
+        
+        if (color != null) {
+            candlestickRenderer.setUpPaint(color);
+            candlestickRenderer.setDownPaint(SeriesColor.rotateColor(color).darker());
+        }
+        return candlestickRenderer;
+    }
+    
     /**
      * Set color for all series
      * 
@@ -152,7 +189,7 @@ public class RendererFactory {
      * @param seriesColor
      * @param seriesCount
      */
-    public static void setSeriesColor(AbstractXYItemRenderer renderer, Color seriesColor, int seriesCount) {
+    private static void setSeriesColor(AbstractXYItemRenderer renderer, Color seriesColor, int seriesCount) {
         if (seriesColor == null) {
             return;
         }
@@ -163,7 +200,26 @@ public class RendererFactory {
         }
     }
     
-    public static void setSeriesColorForScatterUD(AbstractXYItemRenderer renderer, Color seriesColor, int seriesCount) {
+    private static void setSeriesColorForLineGradation(AbstractXYItemRenderer renderer, Color seriesColor, int seriesCount) {
+        if (seriesColor == null) {
+            return;
+        }
+        renderer.setAutoPopulateSeriesStroke(false);
+        renderer.setAutoPopulateSeriesPaint(false);
+        // change color gradation from color -> white by seriesCount+1
+        // color + (255 - color)*ratio = color(1-ratio) + 255*ratio
+        for (int i = 0; i < seriesCount; i++) {
+            double ratio = i / (double)seriesCount;
+            Color color = new Color(
+                    (int) (seriesColor.getRed() * (1 - ratio) + 255 * ratio),
+                    (int) (seriesColor.getGreen() * (1 - ratio) + 255 * ratio),
+                    (int) (seriesColor.getBlue() * (1 - ratio) + 255 * ratio),
+                    seriesColor.getAlpha());
+            renderer.setSeriesPaint(i, color);
+        }
+    }
+    
+    private static void setSeriesColorForScatterUD(AbstractXYItemRenderer renderer, Color seriesColor, int seriesCount) {
         if (seriesColor == null) {
             return;
         }
@@ -177,7 +233,7 @@ public class RendererFactory {
     }
     
     
-    public static void changeShapeArrow(XYLineAndShapeRenderer renderer, int seriesCount) {
+    private static void changeShapeArrow(XYLineAndShapeRenderer renderer, int seriesCount) {
         // Shape up = ShapeUtilities.createUpTriangle(4);
         // Shape down = ShapeUtilities.createDownTriangle(4);
         
@@ -196,7 +252,7 @@ public class RendererFactory {
         // renderer.setSeriesOutlinePaint(1, Color.black);
     }
     
-    public static void changeShapeDot(XYItemRenderer renderer, int seriesCount) {
+    private static void changeShapeDot(XYItemRenderer renderer, int seriesCount) {
         // Shape dot = new Rectangle2D.Double(-3.0, -3.0, 6.0, 6.0);
         Shape dot = new Ellipse2D.Double(0, 0, 2, 2);
         for (int i = 0; i < seriesCount; i++) {
@@ -209,7 +265,7 @@ public class RendererFactory {
      * @param s
      * @return
      */
-    public static Shape createUpArrow(final float s) {
+    private static Shape createUpArrow(final float s) {
         final GeneralPath p0 = new GeneralPath();
         p0.moveTo(0.0f, -s);
         p0.lineTo(-s, 0);
@@ -227,7 +283,7 @@ public class RendererFactory {
      * @param s
      * @return
      */
-    public static Shape createDownArrow(final float s) {
+    private static Shape createDownArrow(final float s) {
         final GeneralPath p0 = new GeneralPath();
         p0.moveTo(0.0f, s);
         p0.lineTo(-s, 0);

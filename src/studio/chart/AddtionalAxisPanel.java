@@ -65,10 +65,11 @@ public abstract class AddtionalAxisPanel extends JPanel {
     public static class AddtionalAxisPanelDefault extends AddtionalAxisPanel {
         private static final long serialVersionUID = 1L;
         
-        protected JTextField labelField = new GuideTextField("Label", SmartChartPanel.TEXT_FIELD_COLUMNS_LONG);
+        protected JTextField labelField = new GuideTextField("Label", SmartChartPanel.TEXT_FIELD_COLUMNS_NORMAL);
         protected JTextField minField = new GuideTextField("Min", SmartChartPanel.TEXT_FIELD_COLUMNS_NORMAL);
         protected JTextField maxField = new GuideTextField("Max", SmartChartPanel.TEXT_FIELD_COLUMNS_NORMAL);
         protected JTextField lengthField = new GuideTextField("Min Length", SmartChartPanel.TEXT_FIELD_COLUMNS_NORMAL);
+        protected JTextField unitField = new GuideTextField("Tick Unit", SmartChartPanel.TEXT_FIELD_COLUMNS_NORMAL);
         protected JCheckBox includeZeroCheckbox = new JCheckBox("Inc. 0", false);
         protected JTextField markerLineField = new GuideTextField("Markers(,)", SmartChartPanel.TEXT_FIELD_COLUMNS_NORMAL);
         protected JComboBox<ChartType> chartCombo = new JComboBox<>(ChartType.values());
@@ -98,6 +99,7 @@ public abstract class AddtionalAxisPanel extends JPanel {
             this.add(minField);
             this.add(maxField);
             this.add(lengthField);
+            this.add(unitField);
             this.add(includeZeroCheckbox);
             this.add(markerLineField);
             this.add(chartCombo);
@@ -127,6 +129,8 @@ public abstract class AddtionalAxisPanel extends JPanel {
             gbc.gridx++;
             layout.setConstraints(lengthField, gbc);
             gbc.gridx++;
+            layout.setConstraints(unitField, gbc);
+            gbc.gridx++;
             layout.setConstraints(includeZeroCheckbox, gbc);
             gbc.gridx++;
             layout.setConstraints(markerLineField, gbc);
@@ -146,6 +150,7 @@ public abstract class AddtionalAxisPanel extends JPanel {
             ((GuideTextField) minField).clearText("");
             ((GuideTextField) maxField).clearText("");
             ((GuideTextField) lengthField).clearText("");
+            ((GuideTextField) unitField).clearText("");
             includeZeroCheckbox.setSelected(false);
             ((GuideTextField) markerLineField).clearText("");
             chartCombo.setSelectedIndex(0);

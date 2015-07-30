@@ -34,9 +34,6 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
     // Filed
     // //////////////////////////////////////
     
-    /** chart panel */
-    private ChartPanel chartPanel;
-    
     private boolean autoScrollRange;
     private List<Double> rangeLengthList = new ArrayList<>();
     
@@ -62,14 +59,12 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
     
     @SuppressWarnings("unchecked")
     public ChartScrollPanel(ChartPanel chartPanel, boolean autoScrollRange, List<Double> scrollRangeLengthList) {
-        this.chartPanel = chartPanel;
         this.autoScrollRange = autoScrollRange;
-        
         for (Double length : scrollRangeLengthList) {
-            if (!Double.isNaN(length)) {
-                rangeLengthList.add(length);
-            } else {
+            if (Double.isNaN(length)) {
                 rangeLengthList.add(0.0);
+            } else {
+                rangeLengthList.add(length);
             }
         }
         
@@ -258,10 +253,6 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
     // Method
     // //////////////////////////////////////
 
-    public ChartPanel getChartPanel() {
-        return chartPanel;
-    }
-
     /**
      * Adjust Range for scroll
      */
@@ -275,13 +266,16 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
     }
 
     private void adjustRangeAxis(Integer axisIndex) {
+        // if fixed length range axis, return
+        if (rangeLengthList.get(axisIndex) == ChartSetting.RANGE_LENGTH_FIXED) {
+            return;
+        }
+        
         List<List<Double>> domainValuesList = domainValuesListMap.get(axisIndex);
         List<List<Double>> rangeValuesList = rangeValuesListMap.get(axisIndex);
-
         Range domainRange = domainAxis.getRange();
         double rangeMin = Double.MAX_VALUE;
         double rangeMax = Double.MIN_VALUE;
-        
 
         for (int i = 0; i < domainValuesList.size(); i++) {
             List<Double> domainList = domainValuesList.get(i);
@@ -290,22 +284,28 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
             // search domain indices
             int lowerIndex = Collections.binarySearch(domainList, domainRange.getLowerBound());
             int upperIndex = Collections.binarySearch(domainList, domainRange.getUpperBound());
-            lowerIndex = lowerIndex >= 0 ? lowerIndex : -lowerIndex - 2;
-            upperIndex = upperIndex >= 0 ? upperIndex : -upperIndex - 1;
-
-            // new range for range axis
-            double rangeMinTemp = Collections.min(rangeList.subList(Math.max(0, lowerIndex), Math.min(rangeList.size(), upperIndex + 1)));
-            double rangeMaxTemp = Collections.max(rangeList.subList(Math.max(0, lowerIndex), Math.min(rangeList.size(), upperIndex + 1)));
-
+            lowerIndex = lowerIndex > 0 ? lowerIndex : ~lowerIndex;
+            upperIndex = upperIndex > 0 ? upperIndex : ~upperIndex;
+            if (lowerIndex == upperIndex) {
+                // No point in this range
+                continue;
+            }
+            double rangeMinTemp = Collections.min(rangeList.subList(lowerIndex, upperIndex));
+            double rangeMaxTemp = Collections.max(rangeList.subList(lowerIndex, upperIndex));
+            
+            // update max/min
             rangeMin = Math.min(rangeMin, rangeMinTemp);
             rangeMax = Math.max(rangeMax, rangeMaxTemp);
         }
-
+        // if no data point in this range, return
+        if (rangeMin == Double.MAX_VALUE || rangeMax == Double.MIN_VALUE) {
+            return;
+        }
+        
         // Margin
         double margin = (rangeMax - rangeMin) * 0.03;
         rangeMin = rangeMin - margin;
         rangeMax = rangeMax + margin;
-
         
         // minimum length
         double minLength = rangeLengthList.get(axisIndex);
