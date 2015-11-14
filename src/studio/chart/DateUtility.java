@@ -97,6 +97,16 @@ public class DateUtility {
             }
         }
     }
+    
+    /**
+     * Parse date to String with day of week
+     * @param date
+     * @return
+     */
+    public static String parseStringWithDayOfWeek(Date date) {
+        return new SimpleDateFormat("yyyy-MM-dd(EEE) HH:mm").format(date);
+    }
+    
 
     /**
      * Compare "date" of two Dates.
@@ -122,7 +132,7 @@ public class DateUtility {
         }
         return 0;
     }
-
+    
     // For TEST
 //    public static void main(String[] args) {
 //        String str = "2013/1/11T11:11";

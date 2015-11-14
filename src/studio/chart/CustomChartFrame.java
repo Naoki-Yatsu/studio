@@ -144,16 +144,7 @@ public class CustomChartFrame extends JFrame implements AxisChangeListener {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    for (Entry<Integer, ValueAxis> entry : axisIndexMap.entrySet()) {
-                        ValueAxis axis = entry.getValue();
-                        List<Range> rangeList = axisRangeHistoryMap.get(entry.getKey());
-                        Range lastBeforeRange = rangeList.get(rangeList.size() - 2);
-                        axis.setRange(lastBeforeRange);
-                        // remove last/this change
-                        rangeList.remove(rangeList.size() - 1);
-                        rangeList.remove(rangeList.size() - 1);
-                        frame.requestFocus();
-                    }
+                    executeBackZoom();
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(frame, getStackTraceString(ex), "ERROR_MESSAGE", JOptionPane.ERROR_MESSAGE);
                 }
@@ -232,6 +223,27 @@ public class CustomChartFrame extends JFrame implements AxisChangeListener {
         axisIndexMap.put(index, axis);
         axisRangeHistoryMap.put(index, rangeList);
     }
+
+    private void executeBackZoom() {
+        for (Entry<Integer, ValueAxis> entry : axisIndexMap.entrySet()) {
+            ValueAxis axis = entry.getValue();
+            List<Range> rangeList = axisRangeHistoryMap.get(entry.getKey());
+            if (rangeList.size() < 2) {
+                continue;
+            }
+            Range lastBeforeRange = rangeList.get(rangeList.size() - 2);
+            axis.setRange(lastBeforeRange);
+            // remove last/this change
+            rangeList.remove(rangeList.size() - 1);
+            rangeList.remove(rangeList.size() - 1);
+            requestFocus();
+        }
+    }
+
+    
+    ///////////////////////////////////////////////////
+    // Listener
+    ///////////////////////////////////////////////////
     
     public void axisChanged(AxisChangeEvent event) {
         // add last range value
@@ -242,11 +254,10 @@ public class CustomChartFrame extends JFrame implements AxisChangeListener {
             }
         }
         if (rangeList != null) {
-//            if (rangeList.size() > 20) {
-//                List<Range> sublist = rangeList.subList(rangeList.size() - 20, rangeList.size());
-//                rangeList.clear();
-//                rangeList.addAll(sublist);
-//            }
+            if (rangeList.size() > 100) {
+                List<Range> sublist = rangeList.subList(0, rangeList.size() - 50);
+                sublist.clear();
+            }
             rangeList.add(((ValueAxis)event.getAxis()).getRange());
         }
         
@@ -256,12 +267,19 @@ public class CustomChartFrame extends JFrame implements AxisChangeListener {
         }
     }
     
+    /**
+     * Update X-Axis range label on top-panel
+     */
     private void updateDomainLanbel() {
         if (domainAxis instanceof DateAxis) {
             DateAxis dateAxis = (DateAxis) domainAxis;
             Date lowerDate = dateAxis.getMinimumDate();
-            Date upperDate = dateAxis.getMaximumDate();
-            String label = DateUtility.parseString(lowerDate, true) + " - " + DateUtility.parseString(upperDate, true);
+            String label = DateUtility.parseStringWithDayOfWeek(lowerDate) + " - ";
+            if (getWidth() > 1000) {
+                Date upperDate = dateAxis.getMaximumDate();
+                label = label + DateUtility.parseStringWithDayOfWeek(upperDate);
+            }
+            // String label = DateUtility.parseString(lowerDate, true) + " - " + DateUtility.parseString(upperDate, true);
             domainLabel.setText(label);
         } else {
             String label = domainAxis.getLowerBound() + " - " + domainAxis.getUpperBound();
@@ -289,4 +307,5 @@ public class CustomChartFrame extends JFrame implements AxisChangeListener {
         pw.flush();
         return sw.toString();
     }
+
 }
