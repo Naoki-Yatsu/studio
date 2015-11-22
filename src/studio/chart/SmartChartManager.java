@@ -18,6 +18,7 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.NumberTickUnit;
+import org.jfree.chart.axis.SegmentedTimeline;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
@@ -126,8 +127,8 @@ public class SmartChartManager {
         ChartPanel chartPanel = null;
             
         // add overlay
-        if (setting.isCrossHair()) {
-            chartPanel = new CrosshairOverlayChartPanel(chart);
+        if (setting.isCrossHair() || setting.isCrossHairCursor()) {
+            chartPanel = new CrosshairOverlayChartPanel(chart, setting.isCrossHair(), setting.isCrossHairCursor());
         } else {
             chartPanel = new ChartPanel(chart);
         }
@@ -220,6 +221,11 @@ public class SmartChartManager {
                 }
             }
             setupAxis(axis, x1Setting.getLabel(), min, max, x1Setting.getTickUnit(), x1Setting.isIncludeZero());
+
+            // timeline
+            if (axis instanceof DateAxis && setting.isUseTimeline()) {
+                setupTimeline(((DateAxis) axis));
+            }
         } else if (plot instanceof CategoryPlot) {
             chart.getCategoryPlot().getDomainAxis().setLabel(x1Setting.getLabel());
         }
@@ -292,7 +298,6 @@ public class SmartChartManager {
             // TBD
         }
     }
-    
     
     
     
@@ -470,6 +475,31 @@ public class SmartChartManager {
                 }
             }
         }
+    }
+
+    // Hour base timeline
+    private void setupTimeline(DateAxis dateAxis) {
+        SegmentedTimeline timeline;
+        if (setting.getTimelineToDay() == DayOfWeekType.ALL) {
+            // one day
+            int includeHours = setting.getTimelineToTime() - setting.getTimelineFromTime();
+            if (includeHours <= 0) {
+                dateAxis.setTimeline(null);
+                return;
+            }
+            timeline = new SegmentedTimeline(SegmentedTimeline.HOUR_SEGMENT_SIZE, includeHours, 24 - includeHours);
+            int startHour =  setting.getTimelineFromTime();
+            timeline.setStartTime(SegmentedTimeline.firstMondayAfter1900() + startHour * timeline.getSegmentSize());
+        } else {
+            // one week
+            int includeDay = setting.getTimelineToDay().getDayNo() - setting.getTimelineFromDay().getDayNo();
+            includeDay = includeDay < 0 ? includeDay + 7 : includeDay;
+            int includeHours = includeDay * 24 + setting.getTimelineToTime() - setting.getTimelineFromTime();
+            timeline = new SegmentedTimeline(SegmentedTimeline.HOUR_SEGMENT_SIZE, includeHours, 168 - includeHours);
+            int startHour = setting.getTimelineFromDay().getDayNo() * 24 + setting.getTimelineFromTime();
+            timeline.setStartTime(SegmentedTimeline.firstMondayAfter1900() + startHour * timeline.getSegmentSize());
+        }
+        dateAxis.setTimeline(timeline);
     }
     
     public SmartChartPanel getSettingPanel() {

@@ -2,6 +2,7 @@ package studio.chart;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.geom.Rectangle2D;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -34,8 +35,18 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
     private Crosshair xCrosshair;
     private List<Crosshair> yCrosshairs = new ArrayList<>();
 
+    private boolean showValue;
+    private boolean showCursor;
+    private int cursorYPlotIndex = 0;
+    
     public CrosshairOverlayChartPanel(JFreeChart chart) {
+        this(chart, true, false);
+    }
+    
+    public CrosshairOverlayChartPanel(JFreeChart chart, boolean showValue, boolean showCursor) {
         super(chart);
+        this.showValue = showValue;
+        this.showCursor = showCursor;
         
         // get info field   
         try {
@@ -49,27 +60,42 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
         }
 
         // overlay
-        CrosshairOverlay crosshairOverlay = new CombindAxisCrosshairOverlay();
+        CrosshairOverlay crosshairOverlay = new CombindAxisCrosshairOverlay(showValue, showCursor);
         
-        // yCrosshair
         Plot plot = chart.getPlot();
-        ValueAxis xAxis = null;
-        if (plot instanceof CombinedDomainXYPlot) {
-            xAxis = ((CombinedDomainXYPlot) plot).getDomainAxis();
-            for (int i = 0; i < ((CombinedDomainXYPlot) plot).getSubplots().size(); i++) {
-                yCrosshairs.add(createCrosshair());
+        
+        // yCrosshair (value)
+        if (showValue) {
+            if (plot instanceof CombinedDomainXYPlot) {
+                for (int i = 0; i < ((CombinedDomainXYPlot) plot).getSubplots().size(); i++) {
+                    Crosshair crosshair = createCrosshair();
+                    yCrosshairs.add(crosshair);
+                    crosshairOverlay.addRangeCrosshair(crosshair);
+                }
+            } else if (plot instanceof XYPlot) {
+                Crosshair crosshair = createCrosshair();
+                yCrosshairs.add(crosshair);
+                crosshairOverlay.addRangeCrosshair(crosshair);
+            } else if (plot instanceof CategoryPlot) {
+                // TODO
             }
-        } else if (plot instanceof XYPlot) {
-            xAxis = ((XYPlot) plot).getDomainAxis();
-            yCrosshairs.add(createCrosshair());
-        } else if (plot instanceof CategoryPlot) {
-            
         }
-        for (Crosshair crosshair : yCrosshairs) {
+        // yCrosshair (cursor)
+        if (showCursor) {
+            Crosshair crosshair = createCrosshair();
+            yCrosshairs.add(crosshair);
             crosshairOverlay.addRangeCrosshair(crosshair);
         }
         
         // xCrosshair
+        ValueAxis xAxis = null;
+        if (plot instanceof CombinedDomainXYPlot) {
+            xAxis = ((CombinedDomainXYPlot) plot).getDomainAxis();
+        } else if (plot instanceof XYPlot) {
+            xAxis = ((XYPlot) plot).getDomainAxis();
+        } else if (plot instanceof CategoryPlot) {
+            // TODO
+        }
         if (xAxis instanceof DateAxis) {
             xCrosshair = createTimeCrosshair((DateAxis)xAxis, (XYPlot)plot);
         } else {
@@ -102,6 +128,7 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
         Crosshair crosshair = new TimeCrosshair(Double.NaN, Color.GRAY, new BasicStroke(0f), dateAxis, plot);
         crosshair.setLabelVisible(true);
         crosshair.setLabelBackgroundPaint(Color.WHITE);
+        crosshair.setLabelFont(new Font("Tahoma", Font.PLAIN, 10));
         return crosshair;
     }
     
@@ -124,32 +151,53 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
         this.xCrosshair.setValue(x);
         
         // y value
-        if (plot instanceof CombinedDomainXYPlot) {
-            @SuppressWarnings("unchecked")
-            List<XYPlot> plots = ((CombinedDomainXYPlot) plot).getSubplots();
-            switch (plots.size()) {
-                case 5:
-                    double y5 = DatasetUtilities.findYValue(plots.get(4).getDataset(), 0, x);
-                    yCrosshairs.get(4).setValue(y5);
-                case 4:
-                    double y4 = DatasetUtilities.findYValue(plots.get(3).getDataset(), 0, x);
-                    yCrosshairs.get(3).setValue(y4);
-                case 3:
-                    double y3 = DatasetUtilities.findYValue(plots.get(2).getDataset(), 0, x);
-                    yCrosshairs.get(2).setValue(y3);                    
-                case 2:
-                    double y2 = DatasetUtilities.findYValue(plots.get(1).getDataset(), 0, x);
-                    yCrosshairs.get(1).setValue(y2);
-                default:
-                    double y1 = DatasetUtilities.findYValue(plots.get(0).getDataset(), 0, x);
-                    yCrosshairs.get(0).setValue(y1);
+        if (showValue) {
+            if (plot instanceof CombinedDomainXYPlot) {
+                @SuppressWarnings("unchecked")
+                List<XYPlot> plots = ((CombinedDomainXYPlot) plot).getSubplots();
+                switch (plots.size()) {
+                    case 5:
+                        double y5 = DatasetUtilities.findYValue(plots.get(4).getDataset(), 0, x);
+                        yCrosshairs.get(4).setValue(y5);
+                    case 4:
+                        double y4 = DatasetUtilities.findYValue(plots.get(3).getDataset(), 0, x);
+                        yCrosshairs.get(3).setValue(y4);
+                    case 3:
+                        double y3 = DatasetUtilities.findYValue(plots.get(2).getDataset(), 0, x);
+                        yCrosshairs.get(2).setValue(y3);
+                    case 2:
+                        double y2 = DatasetUtilities.findYValue(plots.get(1).getDataset(), 0, x);
+                        yCrosshairs.get(1).setValue(y2);
+                    default:
+                        double y1 = DatasetUtilities.findYValue(plots.get(0).getDataset(), 0, x);
+                        yCrosshairs.get(0).setValue(y1);
+                }
+            } else if (plot instanceof XYPlot) {
+                double y = DatasetUtilities.findYValue(plot.getDataset(), 0, x);
+                this.yCrosshairs.get(0).setValue(y);
             }
-        } else if (plot instanceof XYPlot) {
-            double y = DatasetUtilities.findYValue(plot.getDataset(), 0, x);
-            this.yCrosshairs.get(0).setValue(y);
+        }
+
+        if (showCursor) {
+            Crosshair yCursorCrosshair = yCrosshairs.get(yCrosshairs.size() - 1);
+            if (plot instanceof CombinedDomainXYPlot) {
+                @SuppressWarnings("unchecked")
+                List<XYPlot> plots = ((CombinedDomainXYPlot) plot).getSubplots();
+                for (int i = 0; i < plots.size(); i++) {
+                    Rectangle2D subDataArea = getScreenDataArea(i);
+                    if (subDataArea.contains(event.getTrigger().getX(), event.getTrigger().getY())) {
+                        cursorYPlotIndex = i;
+                        double yCursor = plots.get(i).getRangeAxis().java2DToValue(event.getTrigger().getY(), subDataArea, RectangleEdge.LEFT);
+                        yCursorCrosshair.setValue(yCursor);
+                        break;
+                    }
+                }
+            } else if (plot instanceof XYPlot) {
+                double yCursor = plot.getRangeAxis().java2DToValue(event.getTrigger().getY(), dataArea, RectangleEdge.LEFT);
+                yCursorCrosshair.setValue(yCursor);
+            }
         }
     }
-    
     
     /**
      * Returns the data area (the area inside the axes) for the plot or subplot,
@@ -163,4 +211,9 @@ public class CrosshairOverlayChartPanel extends ChartPanel implements ChartMouse
             return scale(plotInfo.getSubplotInfo(subplotIndex).getDataArea());
         }
     }
+
+    public int getCursorYPlotIndex() {
+        return cursorYPlotIndex;
+    }
+    
 }

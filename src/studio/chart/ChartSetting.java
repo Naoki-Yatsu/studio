@@ -25,6 +25,7 @@ public class ChartSetting {
     public static final boolean CROSS_HAIR_DEFAULT = false;
     public static final boolean SCROLL_BAR_DEFAULT = true;
     public static final boolean SCROLL_ADJUST_DEFAULT = true;
+    public static final boolean TIMELINE_DEFAULT = false;
     
     public static final double RANGE_DEFAILT = Double.NaN;
     public static final double RANGE_LENGTH_FIXED = Double.NEGATIVE_INFINITY;
@@ -41,8 +42,16 @@ public class ChartSetting {
     private boolean topBUtton = TOP_BUTTON_DEFAULT;
     private boolean reverseRendering = REVERSE_RENDERING_DEFAULT;
     private boolean crossHair = CROSS_HAIR_DEFAULT;
+    private boolean crossHairCursor = CROSS_HAIR_DEFAULT;
     private boolean scrollBar = SCROLL_BAR_DEFAULT;
     private boolean scrollAdjust = SCROLL_ADJUST_DEFAULT;
+    
+    private boolean useTimeline = TIMELINE_DEFAULT;
+    private DayOfWeekType timelineFromDay;
+    private int timelineFromTime;
+    private DayOfWeekType timelineToDay;
+    private int timelineToTime;
+    
     
     // Multi-axis
     private double combinedGap = GAP_DEFAULT;
@@ -220,6 +229,12 @@ public class ChartSetting {
     public void setCrossHair(boolean crossHair) {
         this.crossHair = crossHair;
     }
+    public boolean isCrossHairCursor() {
+        return crossHairCursor;
+    }
+    public void setCrossHairCursor(boolean crossHairCursor) {
+        this.crossHairCursor = crossHairCursor;
+    }
     public boolean isScrollBar() {
         return scrollBar;
     }
@@ -231,6 +246,37 @@ public class ChartSetting {
     }
     public void setScrollAdjust(boolean scrollAdjust) {
         this.scrollAdjust = scrollAdjust;
+    }
+    
+    public boolean isUseTimeline() {
+        return useTimeline;
+    }
+    public void setUseTimeline(boolean useTimeline) {
+        this.useTimeline = useTimeline;
+    }
+    public DayOfWeekType getTimelineFromDay() {
+        return timelineFromDay;
+    }
+    public void setTimelineFromDay(DayOfWeekType timelineFromDay) {
+        this.timelineFromDay = timelineFromDay;
+    }
+    public int getTimelineFromTime() {
+        return timelineFromTime;
+    }
+    public void setTimelineFromTime(int timelineFromTime) {
+        this.timelineFromTime = timelineFromTime;
+    }
+    public DayOfWeekType getTimelineToDay() {
+        return timelineToDay;
+    }
+    public void setTimelineToDay(DayOfWeekType timelineToDay) {
+        this.timelineToDay = timelineToDay;
+    }
+    public int getTimelineToTime() {
+        return timelineToTime;
+    }
+    public void setTimelineToTime(int timelineToTime) {
+        this.timelineToTime = timelineToTime;
     }
     
     // //////////////////////////////////////

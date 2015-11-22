@@ -24,9 +24,18 @@ public class CombindAxisCrosshairOverlay extends CrosshairOverlay {
     private List<Crosshair> xCrosshairs2;
     private List<Crosshair> yCrosshairs2;
         
+    private boolean showValue;
+    private boolean showCursor;
+    
+//    public CombindAxisCrosshairOverlay() {
+//        this(true, false);
+//    }
+    
     @SuppressWarnings("unchecked")
-    public CombindAxisCrosshairOverlay() {
+    public CombindAxisCrosshairOverlay(boolean showValue, boolean showCursor) {
         super();
+        this.showValue = showValue;
+        this.showCursor = showCursor;
 
         // get super field using reflection
         try {
@@ -75,33 +84,48 @@ public class CombindAxisCrosshairOverlay extends CrosshairOverlay {
         }
         
         // Plot and Range
-        if (plot instanceof CombinedDomainXYPlot) {
-            CrosshairOverlayChartPanel overlayChartPanel = (CrosshairOverlayChartPanel) chartPanel;
-            // Multi-plot
-            @SuppressWarnings("unchecked")
-            List<XYPlot> plots = ((CombinedDomainXYPlot) plot).getSubplots();
-            int subplotIndex = -1;
-            switch (plots.size()) {
-                case 5:
-                    subplotIndex = 4;
-                    paintOverlayRange(g2, overlayChartPanel.getScreenDataArea(subplotIndex), yCrosshairs2.get(subplotIndex), plots.get(subplotIndex));
-                case 4:
-                    subplotIndex = 3;
-                    paintOverlayRange(g2, overlayChartPanel.getScreenDataArea(subplotIndex), yCrosshairs2.get(subplotIndex), plots.get(subplotIndex));
-                case 3:
-                    subplotIndex = 2;
-                    paintOverlayRange(g2, overlayChartPanel.getScreenDataArea(subplotIndex), yCrosshairs2.get(subplotIndex), plots.get(subplotIndex));
-                case 2:
-                    subplotIndex = 1;
-                    paintOverlayRange(g2, overlayChartPanel.getScreenDataArea(subplotIndex), yCrosshairs2.get(subplotIndex), plots.get(subplotIndex));
-                default:
-                    subplotIndex = 0;
-                    paintOverlayRange(g2, overlayChartPanel.getScreenDataArea(subplotIndex), yCrosshairs2.get(subplotIndex), plots.get(subplotIndex));
-            }
+        if (showValue) {
+            if (plot instanceof CombinedDomainXYPlot) {
+                CrosshairOverlayChartPanel overlayChartPanel = (CrosshairOverlayChartPanel) chartPanel;
+                @SuppressWarnings("unchecked")
+                List<XYPlot> plots = ((CombinedDomainXYPlot) plot).getSubplots();
+                int subplotIndex = -1;
+                switch (plots.size()) {
+                    case 5:
+                        subplotIndex = 4;
+                        paintOverlayRange(g2, overlayChartPanel.getScreenDataArea(subplotIndex), yCrosshairs2.get(subplotIndex), plots.get(subplotIndex));
+                    case 4:
+                        subplotIndex = 3;
+                        paintOverlayRange(g2, overlayChartPanel.getScreenDataArea(subplotIndex), yCrosshairs2.get(subplotIndex), plots.get(subplotIndex));
+                    case 3:
+                        subplotIndex = 2;
+                        paintOverlayRange(g2, overlayChartPanel.getScreenDataArea(subplotIndex), yCrosshairs2.get(subplotIndex), plots.get(subplotIndex));
+                    case 2:
+                        subplotIndex = 1;
+                        paintOverlayRange(g2, overlayChartPanel.getScreenDataArea(subplotIndex), yCrosshairs2.get(subplotIndex), plots.get(subplotIndex));
+                    default:
+                        subplotIndex = 0;
+                        paintOverlayRange(g2, overlayChartPanel.getScreenDataArea(subplotIndex), yCrosshairs2.get(subplotIndex), plots.get(subplotIndex));
+                }
 
-        } else if (plot instanceof XYPlot) {
-            paintOverlayRange(g2, dataArea, yCrosshairs2.get(0), plot);
+            } else if (plot instanceof XYPlot) {
+                paintOverlayRange(g2, dataArea, yCrosshairs2.get(0), plot);
+            }
         }
+
+        if (showCursor) {
+            Crosshair yCursorCrosshair = yCrosshairs2.get(yCrosshairs2.size() - 1);
+            if (plot instanceof CombinedDomainXYPlot) {
+                CrosshairOverlayChartPanel overlayChartPanel = (CrosshairOverlayChartPanel) chartPanel;
+                @SuppressWarnings("unchecked")
+                List<XYPlot> plots = ((CombinedDomainXYPlot) plot).getSubplots();
+                Rectangle2D subDataArea = overlayChartPanel.getScreenDataArea(overlayChartPanel.getCursorYPlotIndex());
+                paintOverlayRange(g2, subDataArea, yCursorCrosshair, plots.get(overlayChartPanel.getCursorYPlotIndex()));
+            } else if (plot instanceof XYPlot) {
+                paintOverlayRange(g2, dataArea, yCursorCrosshair, plot);
+            }
+        }
+
         g2.setClip(savedClip);
     }
     
@@ -117,4 +141,6 @@ public class CombindAxisCrosshairOverlay extends CrosshairOverlay {
             }
         }
     }
+    
+   
 }

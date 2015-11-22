@@ -125,10 +125,18 @@ public class SmartChartPanel extends JPanel {
     private JCheckBox topButtonCheckBox = new JCheckBox("Top Button", ChartSetting.TOP_BUTTON_DEFAULT);
     private JCheckBox reverseRenderingOrderCheckBox = new JCheckBox("Rev-Rendering", ChartSetting.REVERSE_RENDERING_DEFAULT);
     private JCheckBox crosshairOverlayCheckBox = new JCheckBox("Cross-hair", ChartSetting.CROSS_HAIR_DEFAULT);
+    private JCheckBox crosshairCursorCheckBox = new JCheckBox("Cursor", ChartSetting.CROSS_HAIR_DEFAULT);
     private JCheckBox scrollBarCheckBox = new JCheckBox("Scroll", ChartSetting.SCROLL_BAR_DEFAULT);
     private JCheckBox scrollAdjustRangeCheckBox = new JCheckBox("Scroll Adjust", ChartSetting.SCROLL_ADJUST_DEFAULT);
     private JLabel serapator1Label = new JLabel(" | ");
     private JLabel serapator2Label = new JLabel(" | ");
+    private JLabel serapator3Label = new JLabel(" | ");
+    private JCheckBox timelineCheckBox = new JCheckBox("Timeline", ChartSetting.TIMELINE_DEFAULT);
+    private JComboBox<DayOfWeekType> timelineFromDateCombo = new JComboBox<>(DayOfWeekType.values());
+    private JTextField timelineFromTimeField = new GuideTextField("From(hour)", TEXT_FIELD_COLUMNS_NORMAL);
+    private JLabel serapator4Label = new JLabel(" ~ ");
+    private JComboBox<DayOfWeekType> timelineToDateCombo = new JComboBox<>(DayOfWeekType.values());
+    private JTextField timelineToTimeField = new GuideTextField("To(hour)", TEXT_FIELD_COLUMNS_NORMAL);
     
     // Open/Close label
     private JLabel y1Left2Label = new JLabel(" + Y1 Left");
@@ -206,9 +214,16 @@ public class SmartChartPanel extends JPanel {
         setting.setTopButton(topButtonCheckBox.isSelected());
         setting.setReverseRendering(reverseRenderingOrderCheckBox.isSelected());
         setting.setCrossHair(crosshairOverlayCheckBox.isSelected());
+        setting.setCrossHairCursor(crosshairCursorCheckBox.isSelected());
         setting.setScrollBar(scrollBarCheckBox.isSelected());
         setting.setScrollAdjust(scrollAdjustRangeCheckBox.isSelected());
-        
+
+        setting.setUseTimeline(timelineCheckBox.isSelected());
+        setting.setTimelineFromDay((DayOfWeekType) timelineFromDateCombo.getSelectedItem());
+        setting.setTimelineFromTime(evelIntField(timelineFromTimeField));
+        setting.setTimelineToDay((DayOfWeekType) timelineToDateCombo.getSelectedItem());
+        setting.setTimelineToTime(evelIntField(timelineToTimeField));
+
         // Axis Items
         // It contains NOT used items
         for (Entry<AxisPosition, AddtionalAxisPanel> entry : axisPanelMap.entrySet()) {
@@ -267,8 +282,14 @@ public class SmartChartPanel extends JPanel {
         topButtonCheckBox.setSelected(ChartSetting.TOP_BUTTON_DEFAULT);
         reverseRenderingOrderCheckBox.setSelected(ChartSetting.REVERSE_RENDERING_DEFAULT);
         crosshairOverlayCheckBox.setSelected(ChartSetting.CROSS_HAIR_DEFAULT);
+        crosshairCursorCheckBox.setSelected(ChartSetting.CROSS_HAIR_DEFAULT);
         scrollBarCheckBox.setSelected(ChartSetting.SCROLL_BAR_DEFAULT);
         scrollAdjustRangeCheckBox.setSelected(ChartSetting.SCROLL_ADJUST_DEFAULT);
+        timelineCheckBox.setSelected(ChartSetting.TIMELINE_DEFAULT);
+        timelineFromDateCombo.setSelectedIndex(0);
+        ((GuideTextField) timelineFromTimeField).clearText("");
+        timelineToDateCombo.setSelectedIndex(0);
+        ((GuideTextField) timelineToTimeField).clearText("");
 
         // Multi
         ((GuideTextField) gapField).clearText("");
@@ -444,6 +465,15 @@ public class SmartChartPanel extends JPanel {
         }
     }
     
+    private int evelIntField(JTextField field) {
+        if (NumberUtils.isNumber(field.getText())) {
+            return Integer.parseInt(field.getText());
+        } else {
+            // TODO
+            return 0;
+        }
+    }
+    
     private int evalWidnowSize(String windowSizeStr, boolean isSizeX) {
         if (StringUtils.isNumeric(windowSizeStr)) {
             int size = Integer.parseInt(windowSizeStr);
@@ -609,14 +639,22 @@ public class SmartChartPanel extends JPanel {
         windowPanelInner1.add(ySizeField);
         windowPanelInner1.add(themeCombo);
         windowPanelInner1.add(topButtonCheckBox);
+        windowPanelInner1.add(reverseRenderingOrderCheckBox);
+        windowPanelInner1.add(serapator1Label);
         
         // window2
-        windowPanelInner2.add(reverseRenderingOrderCheckBox);
         windowPanelInner2.add(crosshairOverlayCheckBox);
+        windowPanelInner2.add(crosshairCursorCheckBox);
         windowPanelInner2.add(scrollBarCheckBox);
         windowPanelInner2.add(scrollAdjustRangeCheckBox);
-        windowPanelInner2.add(serapator1Label);
         windowPanelInner2.add(serapator2Label);
+        windowPanelInner2.add(serapator3Label);
+        windowPanelInner2.add(timelineCheckBox);
+        windowPanelInner2.add(timelineFromDateCombo);
+        windowPanelInner2.add(timelineFromTimeField);
+        windowPanelInner2.add(serapator4Label);
+        windowPanelInner2.add(timelineToDateCombo);
+        windowPanelInner2.add(timelineToTimeField);
         
         // Y Open/Close
         yOpenCloseWrapperPanel.add(yOpenClosePanel);
@@ -795,6 +833,10 @@ public class SmartChartPanel extends JPanel {
         layout.setConstraints(themeCombo, gbc);
         gbc.gridx++;
         layout.setConstraints(topButtonCheckBox, gbc);
+        gbc.gridx++;
+        layout.setConstraints(serapator1Label, gbc);
+        gbc.gridx++;
+        layout.setConstraints(reverseRenderingOrderCheckBox, gbc);
         
         // window panel 2
         layout = new GridBagLayout();
@@ -803,17 +845,29 @@ public class SmartChartPanel extends JPanel {
         gbc.insets = new Insets(1, 2, 1, 2);
         gbc.gridx = 0;
         gbc.gridy = 0;
-        layout.setConstraints(reverseRenderingOrderCheckBox, gbc);
-        gbc.gridx++;
-        layout.setConstraints(serapator1Label, gbc);
-        gbc.gridx++;
         layout.setConstraints(crosshairOverlayCheckBox, gbc);
+        gbc.gridx++;
+        layout.setConstraints(crosshairCursorCheckBox, gbc);
         gbc.gridx++;
         layout.setConstraints(serapator2Label, gbc);
         gbc.gridx++;
         layout.setConstraints(scrollBarCheckBox, gbc);
         gbc.gridx++;
         layout.setConstraints(scrollAdjustRangeCheckBox, gbc);
+        gbc.gridx++;
+        layout.setConstraints(serapator3Label, gbc);
+        gbc.gridx++;
+        layout.setConstraints(timelineCheckBox, gbc);
+        gbc.gridx++;
+        layout.setConstraints(timelineFromDateCombo, gbc);
+        gbc.gridx++;
+        layout.setConstraints(timelineFromTimeField, gbc);
+        gbc.gridx++;
+        layout.setConstraints(serapator4Label, gbc);
+        gbc.gridx++;
+        layout.setConstraints(timelineToDateCombo, gbc);
+        gbc.gridx++;
+        layout.setConstraints(timelineToTimeField, gbc);
         
         // Map
         axisPanelMap.put(AxisPosition.X1, xPanel);
