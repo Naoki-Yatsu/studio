@@ -77,7 +77,7 @@ public class SmartChartPanel extends JPanel {
     
     // set window size by OS
     static {
-        int panelWidthBase = 900;
+        int panelWidthBase = 950;
         int panelHeightBase = 240;
         if(System.getProperty("os.name","").contains("OS X")){ 
             PANEL_WIDTH = panelWidthBase + 120;
@@ -240,8 +240,9 @@ public class SmartChartPanel extends JPanel {
                 axisSetting.setMarkerLines(evalMarkerLine(panel.markerLineField.getText()));
                 axisSetting.setChartType((ChartType) panel.chartCombo.getSelectedItem());
                 axisSetting.setColumnName(getColumnNameValue(panel.columnNameCombo));
-                axisSetting.setWeight(evalWeihgt(panel.weightField.getText()));
                 axisSetting.setSeriesColor((SeriesColor) panel.colorCombo.getSelectedItem());
+                axisSetting.setWeight(evalWeihgt(panel.weightField.getText()));
+                axisSetting.setInvalidValueType((InvalidValueType) panel.invalidValueCombo.getSelectedItem());
                 
             } else if (entry.getValue() instanceof AddtionalAxisPanelY1Left) {
                 // Y1 Left 1-4
@@ -251,21 +252,25 @@ public class SmartChartPanel extends JPanel {
                 axisSetting1.setChartType((ChartType) panel.chartCombo1.getSelectedItem());
                 axisSetting1.setColumnName(getColumnNameValue(panel.columnNameCombo1));
                 axisSetting1.setSeriesColor((SeriesColor) panel.colorCombo1.getSelectedItem());
+                axisSetting1.setInvalidValueType((InvalidValueType) panel.invalidValueCombo1.getSelectedItem());
 
                 ChartAxisSetting axisSetting2 = setting.getAxisSetting(AxisPosition.Y1_LEFT2);
                 axisSetting2.setChartType((ChartType) panel.chartCombo2.getSelectedItem());
                 axisSetting2.setColumnName(getColumnNameValue(panel.columnNameCombo2));
                 axisSetting2.setSeriesColor((SeriesColor) panel.colorCombo2.getSelectedItem());
+                axisSetting2.setInvalidValueType((InvalidValueType) panel.invalidValueCombo2.getSelectedItem());
                 
                 ChartAxisSetting axisSetting3 = setting.getAxisSetting(AxisPosition.Y1_LEFT3);
                 axisSetting3.setChartType((ChartType) panel.chartCombo3.getSelectedItem());
                 axisSetting3.setColumnName(getColumnNameValue(panel.columnNameCombo3));
                 axisSetting3.setSeriesColor((SeriesColor) panel.colorCombo3.getSelectedItem());
+                axisSetting3.setInvalidValueType((InvalidValueType) panel.invalidValueCombo3.getSelectedItem());
 
                 ChartAxisSetting axisSetting4 = setting.getAxisSetting(AxisPosition.Y1_LEFT4);
                 axisSetting4.setChartType((ChartType) panel.chartCombo4.getSelectedItem());
                 axisSetting4.setColumnName(getColumnNameValue(panel.columnNameCombo4));
                 axisSetting4.setSeriesColor((SeriesColor) panel.colorCombo4.getSelectedItem());
+                axisSetting4.setInvalidValueType((InvalidValueType) panel.invalidValueCombo4.getSelectedItem());
             }
         }
     }
@@ -980,6 +985,7 @@ public class SmartChartPanel extends JPanel {
         xPanel.columnNameCombo.setVisible(false);
         xPanel.weightField.setVisible(false);
         xPanel.colorCombo.setVisible(false);
+        xPanel.invalidValueCombo.setVisible(false);
         
         // Y1
         y1Panel.columnNameCombo.setVisible(false);

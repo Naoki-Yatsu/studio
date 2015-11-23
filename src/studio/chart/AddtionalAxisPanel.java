@@ -76,6 +76,7 @@ public abstract class AddtionalAxisPanel extends JPanel {
         protected JComboBox<String> columnNameCombo = new JComboBox<>(new String[]{SmartChartPanel.DEFAULT_COLUMN_NAME});
         protected JComboBox<Color> colorCombo = new JComboBox<>(SeriesColor.COLORS);
         protected JTextField weightField = new GuideTextField("weight", "1", SmartChartPanel.TEXT_FIELD_COLUMNS_SHORT);
+        protected JComboBox<InvalidValueType> invalidValueCombo = new JComboBox<>(InvalidValueType.values());
         
         public AddtionalAxisPanelDefault(String itemName, AxisPosition axisPosition, Color color) {
             super(itemName, axisPosition, color);
@@ -106,6 +107,7 @@ public abstract class AddtionalAxisPanel extends JPanel {
             this.add(columnNameCombo);
             this.add(colorCombo);
             this.add(weightField);
+            this.add(invalidValueCombo);
             
             // panel layout
             TitledBorder border = new TitledBorder(itemName + " Axis");
@@ -142,6 +144,8 @@ public abstract class AddtionalAxisPanel extends JPanel {
             layout.setConstraints(colorCombo, gbc);
             gbc.gridx++;
             layout.setConstraints(weightField, gbc);
+            gbc.gridx++;
+            layout.setConstraints(invalidValueCombo, gbc);
         }
         
         @Override
@@ -158,6 +162,7 @@ public abstract class AddtionalAxisPanel extends JPanel {
             columnNameCombo.addItem(SmartChartPanel.DEFAULT_COLUMN_NAME);
             colorCombo.setSelectedIndex(0);
             ((GuideTextField) weightField).clearText("1");
+            invalidValueCombo.setSelectedIndex(0);
         }
         
         @Override
@@ -205,6 +210,11 @@ public abstract class AddtionalAxisPanel extends JPanel {
         protected JComboBox<Color> colorCombo3 = new JComboBox<>(SeriesColor.COLORS);
         protected JComboBox<Color> colorCombo4 = new JComboBox<>(SeriesColor.COLORS);
         
+        protected JComboBox<InvalidValueType> invalidValueCombo1 = new JComboBox<>(InvalidValueType.values());
+        protected JComboBox<InvalidValueType> invalidValueCombo2 = new JComboBox<>(InvalidValueType.values());
+        protected JComboBox<InvalidValueType> invalidValueCombo3 = new JComboBox<>(InvalidValueType.values());
+        protected JComboBox<InvalidValueType> invalidValueCombo4 = new JComboBox<>(InvalidValueType.values());
+        
         public AddtionalAxisPanelY1Left(String itemName, AxisPosition axisPosition, Color color) {
             super(itemName, axisPosition, color);
             
@@ -242,6 +252,10 @@ public abstract class AddtionalAxisPanel extends JPanel {
             this.add(colorCombo2);
             this.add(colorCombo3);
             this.add(colorCombo4);
+            this.add(invalidValueCombo1);
+            this.add(invalidValueCombo2);
+            this.add(invalidValueCombo3);
+            this.add(invalidValueCombo4);
             
             // panel layout
             TitledBorder border = new TitledBorder(itemName + " Axis");
@@ -266,6 +280,8 @@ public abstract class AddtionalAxisPanel extends JPanel {
             gbc.gridx++;
             layout.setConstraints(colorCombo1, gbc);
             gbc.gridx++;
+            layout.setConstraints(invalidValueCombo1, gbc);
+            gbc.gridx++;
             layout.setConstraints(BLANK_LABEL, gbc);
             gbc.gridx++;
             layout.setConstraints(label2, gbc);
@@ -275,6 +291,8 @@ public abstract class AddtionalAxisPanel extends JPanel {
             layout.setConstraints(columnNameCombo2, gbc);
             gbc.gridx++;
             layout.setConstraints(colorCombo2, gbc);
+            gbc.gridx++;
+            layout.setConstraints(invalidValueCombo2, gbc);
             gbc.gridy++;
             gbc.gridx = 0;
             layout.setConstraints(label3, gbc);
@@ -285,6 +303,8 @@ public abstract class AddtionalAxisPanel extends JPanel {
             gbc.gridx++;
             layout.setConstraints(colorCombo3, gbc);
             gbc.gridx++;
+            layout.setConstraints(invalidValueCombo3, gbc);
+            gbc.gridx++;
             layout.setConstraints(BLANK_LABEL, gbc);
             gbc.gridx++;
             layout.setConstraints(label4, gbc);
@@ -294,6 +314,8 @@ public abstract class AddtionalAxisPanel extends JPanel {
             layout.setConstraints(columnNameCombo4, gbc);
             gbc.gridx++;
             layout.setConstraints(colorCombo4, gbc);
+            gbc.gridx++;
+            layout.setConstraints(invalidValueCombo4, gbc);
         }
         
         @Override
@@ -308,6 +330,11 @@ public abstract class AddtionalAxisPanel extends JPanel {
             colorCombo2.setSelectedIndex(0);
             colorCombo3.setSelectedIndex(0);
             colorCombo4.setSelectedIndex(0);
+            
+            invalidValueCombo1.setSelectedIndex(0);
+            invalidValueCombo2.setSelectedIndex(0);
+            invalidValueCombo3.setSelectedIndex(0);
+            invalidValueCombo4.setSelectedIndex(0);
         }
         
         @Override

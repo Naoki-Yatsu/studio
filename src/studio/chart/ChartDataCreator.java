@@ -71,6 +71,7 @@ public class ChartDataCreator {
         // create separate dataset for each axis, with REVERSE order.
         //
         NavigableMap<Integer, Integer> fromToMap = new TreeMap<>();
+        NavigableMap<Integer, InvalidValueType> fromInvalidValueMap = new TreeMap<>();
         int endIndex = tableModel.getColumnCount();
 
         // reverse order
@@ -80,11 +81,13 @@ public class ChartDataCreator {
             if (setting.isAxisEnable(axisPosition)) {
                 int index = getColumnIndexFromName(tableModel, setting.getAxisSetting(axisPosition).getColumnName());
                 fromToMap.put(index, endIndex);
+                fromInvalidValueMap.put(index, setting.getAxisSetting(axisPosition).getInvalidValueType());
                 endIndex = index;
             }
         }
         // Y1, in the end
         fromToMap.put(1, endIndex);
+        fromInvalidValueMap.put(1, setting.getAxisSetting(AxisPosition.Y1).getInvalidValueType());
         
         // Judge x axis type and create dataset
         List<XYDataset> xyDatasetList = new ArrayList<>();
@@ -95,12 +98,12 @@ public class ChartDataCreator {
         if (dataType == AxisDataType.DATE) {
             // TimeSeriesCollection
             for (Entry<Integer, Integer> fromToEntry : fromToMap.entrySet()) {
-                xyDatasetList.add(createTimeSeriesCollection(tableModel, fromToEntry.getKey(), fromToEntry.getValue()));
+                xyDatasetList.add(createTimeSeriesCollection(tableModel, fromToEntry.getKey(), fromToEntry.getValue(), fromInvalidValueMap.get(fromToEntry.getKey())));
             }
         } else if (dataType == AxisDataType.XY) {
             // XYSeriesCollection
             for (Entry<Integer, Integer> fromToEntry : fromToMap.entrySet()) {
-                xyDatasetList.add(createXYSeriesCollection(tableModel, fromToEntry.getKey(), fromToEntry.getValue()));
+                xyDatasetList.add(createXYSeriesCollection(tableModel, fromToEntry.getKey(), fromToEntry.getValue(), fromInvalidValueMap.get(fromToEntry.getKey())));
             }
         } else if (dataType == AxisDataType.CATEGORY) {
             // CategoryDataset
@@ -334,7 +337,8 @@ public class ChartDataCreator {
             }
         }
         NumberAxis numberAxis = new NumberAxis();
-        XYPlot plot = new XYPlot(dataset, null, numberAxis, renderer);
+        // XYPlot plot = new XYPlot(dataset, null, numberAxis, renderer);
+        XYPlot plot = new XYNullablePlot(dataset, null, numberAxis, renderer);
         plot.setRangeAxisLocation(location);
         plot.setRangePannable(true);
         return plot;
@@ -540,7 +544,7 @@ public class ChartDataCreator {
     // Method - Dataset
     // //////////////////////////////////////
 
-    private static TimeSeriesCollection createTimeSeriesCollection(KTableModel table, int fromCol, int toCol) {
+    private static TimeSeriesCollection createTimeSeriesCollection(KTableModel table, int fromCol, int toCol, InvalidValueType invalidValueType) {
         Class<?> klass = table.getColumnClass(0);
         TimeSeriesCollection tsc = new TimeSeriesCollection(tz);
 
@@ -555,7 +559,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < dates.getLength(); row++) {
                         K.KDate date = (K.KDate) dates.at(row);
                         Day day = new Day(date.toDate(), tz, locale);
-                        addData(series, day, table, row, col);
+                        addData(series, day, table, row, col, invalidValueType);
                     }
                 } else if (klass == K.KTimeVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -564,7 +568,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < table.getRowCount(); row++) {
                         K.KTime time = (K.KTime) times.at(row);
                         Millisecond ms = new Millisecond(time.toTime(), tz, locale);
-                        addData(series, ms, table, row, col);
+                        addData(series, ms, table, row, col, invalidValueType);
                     }
                 } else if (klass == K.KTimestampVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -573,7 +577,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < dates.getLength(); row++) {
                         K.KTimestamp date = (K.KTimestamp) dates.at(row);
                         Millisecond ms = new Millisecond(date.toTimestamp(), tz, locale);
-                        addData(series, ms, table, row, col);
+                        addData(series, ms, table, row, col, invalidValueType);
                     }
                 } else if (klass == K.KTimespanVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -582,7 +586,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < table.getRowCount(); row++) {
                         K.KTimespan time = (K.KTimespan) times.at(row);
                         Millisecond ms = new Millisecond(time.toTime(), tz, locale);
-                        addData(series, ms, table, row, col);
+                        addData(series, ms, table, row, col, invalidValueType);
                     }
                 } else if (klass == K.KDatetimeVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -591,7 +595,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < table.getRowCount(); row++) {
                         K.KDatetime time = (K.KDatetime) times.at(row);
                         Millisecond ms = new Millisecond(time.toTimestamp(), tz, locale);
-                        addData(series, ms, table, row, col);
+                        addData(series, ms, table, row, col, invalidValueType);
                     }
                 } else if (klass == K.KMonthVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -603,7 +607,7 @@ public class ChartDataCreator {
                         m = 1 + m % 12;
 
                         Month month = new Month(m, y);
-                        addData(series, month, table, row, col);
+                        addData(series, month, table, row, col, invalidValueType);
                     }
                 } else if (klass == K.KSecondVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -611,7 +615,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < table.getRowCount(); row++) {
                         K.Second time = (K.Second) times.at(row);
                         Second second = new Second(time.i % 60, time.i / 60, 0, 1, 1, 2001);
-                        addData(series, second, table, row, col);
+                        addData(series, second, table, row, col, invalidValueType);
                     }
                 } else if (klass == K.KMinuteVector.class) {
                     series = new TimeSeries(table.getColumnName(col));
@@ -619,7 +623,7 @@ public class ChartDataCreator {
                     for (int row = 0; row < table.getRowCount(); row++) {
                         K.Minute time = (K.Minute) times.at(row);
                         Minute minute = new Minute(time.i % 60, time.i / 60, 1, 1, 2001);
-                        addData(series, minute, table, row, col);
+                        addData(series, minute, table, row, col, invalidValueType);
                     }
                 }
             } catch (SeriesException e) {
@@ -634,7 +638,7 @@ public class ChartDataCreator {
         return tsc;
     }
 
-    private static void addData(TimeSeries series, RegularTimePeriod period, KTableModel table, int row, int col) {
+    private static void addData(TimeSeries series, RegularTimePeriod period, KTableModel table, int row, int col, InvalidValueType invalidValueType ) {
         Object o = table.getValueAt(row, col);
         if (o instanceof K.KBase
                 && !((K.KBase) o).isNull()
@@ -642,11 +646,19 @@ public class ChartDataCreator {
             double value = ((ToDouble) o).toDouble();
             if (Double.isFinite(value)) {
                 series.addOrUpdate(period, ((ToDouble) o).toDouble());
+            } else {
+                if (invalidValueType.isUseInf()) {
+                    series.addOrUpdate(period, Double.NaN);
+                }
+            }
+        } else {
+            if (invalidValueType.isUseNan()) {
+                series.addOrUpdate(period, Double.NaN);
             }
         }
     }
     
-    private static XYSeriesCollection createXYSeriesCollection(KTableModel table, int fromCol, int toCol) {
+    private static XYSeriesCollection createXYSeriesCollection(KTableModel table, int fromCol, int toCol, InvalidValueType invalidValueType) {
         XYSeriesCollection xysc = new XYSeriesCollection();
 
         for (int col = fromCol; col < toCol; col++) {
@@ -670,10 +682,19 @@ public class ChartDataCreator {
                         double y = ((ToDouble) yObject).toDouble();
                         if (Double.isFinite(y)) {
                             series.add(x, y);
+                        } else {
+                            if (invalidValueType.isUseInf()) {
+                                series.addOrUpdate(x, Double.NaN);
+                            }
+                        }
+                    } else {
+                        if (invalidValueType.isUseNan()) {
+                            series.addOrUpdate(x, Double.NaN);
                         }
                     }
                 }
             } catch (SeriesException e) {
+                e.printStackTrace();
                 System.err.println("Error adding to series");
             }
 

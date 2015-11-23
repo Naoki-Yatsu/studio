@@ -323,6 +323,9 @@ public class ChartSetting {
         // weight
         private double weight;
 
+        // how to use invalid values
+        private InvalidValueType invalidValueType;
+        
         public ChartAxisSetting(AxisPosition axisPosition) {
             this.axisPosition = axisPosition;
             initialize();
@@ -337,8 +340,9 @@ public class ChartSetting {
             markerLines = Collections.emptyList();
             chartType = null;
             columnName = null;
-            weight = 1.0;
             color = null;
+            weight = 1.0;
+            invalidValueType = null;
         }
 
         public String getLabel() {
@@ -406,6 +410,12 @@ public class ChartSetting {
         }
         public void setWeight(double weight) {
             this.weight = weight;
+        }
+        public InvalidValueType getInvalidValueType() {
+            return invalidValueType;
+        }
+        public void setInvalidValueType(InvalidValueType invalidValueType) {
+            this.invalidValueType = invalidValueType;
         }
 
         // Series color

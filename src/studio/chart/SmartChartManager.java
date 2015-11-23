@@ -480,7 +480,29 @@ public class SmartChartManager {
     // Hour base timeline
     private void setupTimeline(DateAxis dateAxis) {
         SegmentedTimeline timeline;
-        if (setting.getTimelineToDay() == DayOfWeekType.ALL) {
+        if (setting.getTimelineFromDay() == DayOfWeekType.FX) {
+            // FX (TKY Mon 6:00 ~ Sat 7:00)
+            timeline = new SegmentedTimeline(SegmentedTimeline.HOUR_SEGMENT_SIZE, 121, 47);
+            timeline.setStartTime(SegmentedTimeline.firstMondayAfter1900() + 6 * timeline.getSegmentSize());
+//            // FX (NYC Sun 17:00 ~ Fri 17:00) <- NOT working if change timezone
+//            timeline = new SegmentedTimeline(SegmentedTimeline.HOUR_SEGMENT_SIZE, 120, 48);
+//            timeline.setStartTime(SegmentedTimeline.firstMondayAfter1900() + 161 * timeline.getSegmentSize());
+//            timeline.setAdjustForDaylightSaving(true);
+//            // change timezone
+//            try {
+//                Class<SegmentedTimeline> clazz = SegmentedTimeline.class;
+//                Field workingCalendarFiled = clazz.getDeclaredField("workingCalendar");
+//                workingCalendarFiled.setAccessible(true);
+//                ((Calendar) workingCalendarFiled.get(timeline)).setTimeZone(TimeZone.getTimeZone("America/New_York"));
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+            
+        } else if (setting.getTimelineFromDay() == DayOfWeekType.TSE) {
+            // TSE 9:00-11:30, 12:30-15:00 TODO
+            timeline = SegmentedTimeline.newFifteenMinuteTimeline();
+            
+        } else if (setting.getTimelineFromDay() == DayOfWeekType.DAY) {
             // one day
             int includeHours = setting.getTimelineToTime() - setting.getTimelineFromTime();
             if (includeHours <= 0) {
@@ -490,6 +512,7 @@ public class SmartChartManager {
             timeline = new SegmentedTimeline(SegmentedTimeline.HOUR_SEGMENT_SIZE, includeHours, 24 - includeHours);
             int startHour =  setting.getTimelineFromTime();
             timeline.setStartTime(SegmentedTimeline.firstMondayAfter1900() + startHour * timeline.getSegmentSize());
+            
         } else {
             // one week
             int includeDay = setting.getTimelineToDay().getDayNo() - setting.getTimelineFromDay().getDayNo();
