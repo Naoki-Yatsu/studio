@@ -290,8 +290,11 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
                 // No point in this range
                 continue;
             }
-            double rangeMinTemp = Collections.min(rangeList.subList(lowerIndex, upperIndex));
-            double rangeMaxTemp = Collections.max(rangeList.subList(lowerIndex, upperIndex));
+            double rangeMinTemp = rangeList.subList(lowerIndex, upperIndex).stream().filter(d -> !Double.isNaN(d)).min(Double::compare).orElse(Double.MAX_VALUE);
+            double rangeMaxTemp = rangeList.subList(lowerIndex, upperIndex).stream().filter(d -> !Double.isNaN(d)).max(Double::compare).orElse(Double.MIN_VALUE);
+            // if value contains NaN, Collections.max is NOT works
+            // double rangeMinTemp = Collections.min(rangeList.subList(lowerIndex, upperIndex));
+            // double rangeMaxTemp = Collections.max(rangeList.subList(lowerIndex, upperIndex));
             
             // update max/min
             rangeMin = Math.min(rangeMin, rangeMinTemp);
