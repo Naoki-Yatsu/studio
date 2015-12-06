@@ -29,6 +29,7 @@ import javax.swing.WindowConstants;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
+import org.jfree.chart.axis.SegmentedTimeline;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.event.AxisChangeEvent;
 import org.jfree.chart.event.AxisChangeListener;
@@ -160,8 +161,8 @@ public class CustomChartFrame extends JFrame implements AxisChangeListener {
      * @param autoScrollRange
      * @param scrollRangeLengthList
      */
-    public void setChartPanelScroll(ChartPanel chartPanel, boolean autoScrollRange, List<Double> scrollRangeLengthList) {
-        ChartScrollPanel scrollPanel = new ChartScrollPanel((ChartPanel)chartPanel, autoScrollRange, scrollRangeLengthList);
+    public void setChartPanelScroll(ChartPanel chartPanel, boolean autoScrollRange, List<Double> scrollRangeLengthList, SegmentedTimeline timeline) {
+        ChartScrollPanel scrollPanel = new ChartScrollPanel((ChartPanel)chartPanel, autoScrollRange, scrollRangeLengthList, timeline);
         addKeyListener(scrollPanel);
         mainPanel.add(scrollPanel, BorderLayout.CENTER);
         
@@ -263,14 +264,14 @@ public class CustomChartFrame extends JFrame implements AxisChangeListener {
         
         // update domdin label
         if (event.getAxis().equals(domainAxis)) {
-            updateDomainLanbel();
+            updateDomainLabel();
         }
     }
     
     /**
      * Update X-Axis range label on top-panel
      */
-    private void updateDomainLanbel() {
+    private void updateDomainLabel() {
         if (domainAxis instanceof DateAxis) {
             DateAxis dateAxis = (DateAxis) domainAxis;
             Date lowerDate = dateAxis.getMinimumDate();

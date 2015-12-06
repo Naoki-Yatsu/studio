@@ -134,10 +134,18 @@ public class SmartChartManager {
         }
         chartPanel.setMouseZoomable(true, false);
         
+        // timeline
+        ValueAxis domainAxis = chart.getXYPlot().getDomainAxis();
+        SegmentedTimeline timeline = null;
+        if (domainAxis instanceof DateAxis && setting.isUseTimeline()) {
+            timeline = createTimeline();
+            ((DateAxis) domainAxis).setTimeline(timeline);
+        }
+        
         // Set Frame
         CustomChartFrame chartFrame = new CustomChartFrame("Studio for kdb+ [smart chart]", this, setting.isTopButton());
         if (setting.isScrollBar()) {
-            chartFrame.setChartPanelScroll(chartPanel, setting.isScrollAdjust(), setting.getRangeLengthList());
+            chartFrame.setChartPanelScroll(chartPanel, setting.isScrollAdjust(), setting.getRangeLengthList(), timeline);
         } else {
             chartFrame.setChartPanel(chartPanel);
         }
@@ -222,10 +230,6 @@ public class SmartChartManager {
             }
             setupAxis(axis, x1Setting.getLabel(), min, max, x1Setting.getTickUnit(), x1Setting.isIncludeZero());
 
-            // timeline
-            if (axis instanceof DateAxis && setting.isUseTimeline()) {
-                setupTimeline(((DateAxis) axis));
-            }
         } else if (plot instanceof CategoryPlot) {
             chart.getCategoryPlot().getDomainAxis().setLabel(x1Setting.getLabel());
         }
@@ -478,7 +482,7 @@ public class SmartChartManager {
     }
 
     // Hour base timeline
-    private void setupTimeline(DateAxis dateAxis) {
+    private SegmentedTimeline createTimeline() {
         SegmentedTimeline timeline;
         if (setting.getTimelineFromDay() == DayOfWeekType.FX) {
             // FX (TKY Mon 6:00 ~ Sat 7:00)
@@ -506,8 +510,7 @@ public class SmartChartManager {
             // one day
             int includeHours = setting.getTimelineToTime() - setting.getTimelineFromTime();
             if (includeHours <= 0) {
-                dateAxis.setTimeline(null);
-                return;
+                return null;
             }
             timeline = new SegmentedTimeline(SegmentedTimeline.HOUR_SEGMENT_SIZE, includeHours, 24 - includeHours);
             int startHour =  setting.getTimelineFromTime();
@@ -522,7 +525,7 @@ public class SmartChartManager {
             int startHour = setting.getTimelineFromDay().getDayNo() * 24 + setting.getTimelineFromTime();
             timeline.setStartTime(SegmentedTimeline.firstMondayAfter1900() + startHour * timeline.getSegmentSize());
         }
-        dateAxis.setTimeline(timeline);
+        return timeline;
     }
     
     public SmartChartPanel getSettingPanel() {

@@ -80,7 +80,7 @@ public class SmartChartPanel extends JPanel {
         int panelWidthBase = 950;
         int panelHeightBase = 240;
         if(System.getProperty("os.name","").contains("OS X")){ 
-            PANEL_WIDTH = panelWidthBase + 120;
+            PANEL_WIDTH = panelWidthBase + 140;
             PANEL_HEIGHT_BASE = panelHeightBase + 40;
         } else {
             PANEL_WIDTH = panelWidthBase;

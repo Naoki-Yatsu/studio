@@ -16,6 +16,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 
 import org.jfree.chart.ChartPanel;
+import org.jfree.chart.axis.SegmentedTimeline;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.XYPlot;
@@ -29,36 +30,35 @@ import org.jfree.data.xy.XYDataset;
 public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyListener {
 
     private static final long serialVersionUID = 1L;
-    
+
     // //////////////////////////////////////
     // Filed
     // //////////////////////////////////////
-    
+
     private boolean autoScrollRange;
     private List<Double> rangeLengthList = new ArrayList<>();
-    
-    /** scroll bar*/
+
+    /** scroll bar */
     private ChartScrollBar scrollBarX;
     private ChartScrollBar scrollBarY;
-    
+
     /** Plot */
     private List<XYPlot> plots;
-    
+
     /** Range Axis */
     private ValueAxis domainAxis;
     private Map<Integer, ValueAxis> rangeAxisMap = new HashMap<>();
-    
+
     /** values list */
     private Map<Integer, List<List<Double>>> domainValuesListMap = new HashMap<>();
     private Map<Integer, List<List<Double>>> rangeValuesListMap = new HashMap<>();
-    
-    
+
     // //////////////////////////////////////
     // Constructor
     // //////////////////////////////////////
-    
+
     @SuppressWarnings("unchecked")
-    public ChartScrollPanel(ChartPanel chartPanel, boolean autoScrollRange, List<Double> scrollRangeLengthList) {
+    public ChartScrollPanel(ChartPanel chartPanel, boolean autoScrollRange, List<Double> scrollRangeLengthList, SegmentedTimeline timeline) {
         this.autoScrollRange = autoScrollRange;
         for (Double length : scrollRangeLengthList) {
             if (Double.isNaN(length)) {
@@ -67,11 +67,11 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
                 rangeLengthList.add(length);
             }
         }
-        
+
         setLayout(new BorderLayout());
         add(chartPanel, BorderLayout.CENTER);
         addMouseWheelListener(this);
-        
+
         // plot
         XYPlot plot = chartPanel.getChart().getXYPlot();
         domainAxis = plot.getDomainAxis();
@@ -82,15 +82,15 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
             this.plots = new ArrayList<>();
             plots.add(plot);
         }
-        
+
         // scroll X
-        this.scrollBarX = new ChartScrollBar(JScrollBar.HORIZONTAL, plots);
+        this.scrollBarX = new ChartScrollBar(JScrollBar.HORIZONTAL, plots, timeline);
         add(scrollBarX, BorderLayout.SOUTH);
-        
-        // scroll Y 
-        this.scrollBarY = new ChartScrollBar(JScrollBar.VERTICAL, plots);
+
+        // scroll Y
+        this.scrollBarY = new ChartScrollBar(JScrollBar.VERTICAL, plots, null);
         add(scrollBarY, BorderLayout.EAST);
-        
+
         // setup data range for auto scroll (VERTICAL only)
         if (autoScrollRange) {
             int axisIndex = 0;
@@ -107,7 +107,7 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
                     setupViewRangeForRangeAxis(axisIndex, xyPlot.getDataset(i));
                 }
                 axisIndex++;
-                
+
                 // Right Axis
                 if (xyPlot.getRangeAxisCount() >= 2) {
                     rangeAxisMap.put(axisIndex, xyPlot.getRangeAxis(1));
@@ -117,7 +117,7 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
             }
         }
     }
-    
+
     private void setupViewRangeForRangeAxis(Integer axisIndex, XYDataset dataset) {
         if (!domainValuesListMap.containsKey(axisIndex)) {
             domainValuesListMap.put(axisIndex, new ArrayList<>());
@@ -138,7 +138,7 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
             domainValuesList.add(domainList);
             rangeValuesList.add(rangeListHigh);
             rangeValuesList.add(rangeListLow);
-            
+
             OHLCSeriesCollection ohlcDataset = (OHLCSeriesCollection) dataset;
             for (int itemIndex = 0; itemIndex < ohlcDataset.getItemCount(0); itemIndex++) {
                 domainList.add(dataset.getXValue(0, itemIndex));
@@ -153,7 +153,7 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
                 List<Double> rangeList = new ArrayList<>();
                 domainValuesList.add(domainList);
                 rangeValuesList.add(rangeList);
-                
+
                 // value list for series
                 for (int item = 0; item < dataset.getItemCount(series); item++) {
                     domainList.add(dataset.getXValue(series, item));
@@ -162,7 +162,7 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
             }
         }
     }
-    
+
     // //////////////////////////////////////
     // Method (Listener)
     // //////////////////////////////////////
@@ -270,7 +270,7 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
         if (rangeLengthList.get(axisIndex) == ChartSetting.RANGE_LENGTH_FIXED) {
             return;
         }
-        
+
         List<List<Double>> domainValuesList = domainValuesListMap.get(axisIndex);
         List<List<Double>> rangeValuesList = rangeValuesListMap.get(axisIndex);
         Range domainRange = domainAxis.getRange();
@@ -290,12 +290,16 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
                 // No point in this range
                 continue;
             }
-            double rangeMinTemp = rangeList.subList(lowerIndex, upperIndex).stream().filter(d -> !Double.isNaN(d)).min(Double::compare).orElse(Double.MAX_VALUE);
-            double rangeMaxTemp = rangeList.subList(lowerIndex, upperIndex).stream().filter(d -> !Double.isNaN(d)).max(Double::compare).orElse(Double.MIN_VALUE);
-            // if value contains NaN, Collections.max is NOT works
-            // double rangeMinTemp = Collections.min(rangeList.subList(lowerIndex, upperIndex));
-            // double rangeMaxTemp = Collections.max(rangeList.subList(lowerIndex, upperIndex));
-            
+            double rangeMinTemp = rangeList.subList(lowerIndex, upperIndex).stream()
+                    .filter(d -> !Double.isNaN(d)).min(Double::compare)
+                    .orElse(Double.MAX_VALUE);
+            double rangeMaxTemp = rangeList.subList(lowerIndex, upperIndex).stream()
+                    .filter(d -> !Double.isNaN(d)).max(Double::compare)
+                    .orElse(Double.MIN_VALUE);
+                    // if value contains NaN, Collections.max is NOT works
+                    // double rangeMinTemp = Collections.min(rangeList.subList(lowerIndex, upperIndex));
+                    // double rangeMaxTemp = Collections.max(rangeList.subList(lowerIndex, upperIndex));
+
             // update max/min
             rangeMin = Math.min(rangeMin, rangeMinTemp);
             rangeMax = Math.max(rangeMax, rangeMaxTemp);
@@ -304,12 +308,12 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
         if (rangeMin == Double.MAX_VALUE || rangeMax == Double.MIN_VALUE) {
             return;
         }
-        
+
         // Margin
         double margin = (rangeMax - rangeMin) * 0.03;
         rangeMin = rangeMin - margin;
         rangeMax = rangeMax + margin;
-        
+
         // minimum length
         double minLength = rangeLengthList.get(axisIndex);
         if (rangeMax - rangeMin < minLength) {
@@ -323,5 +327,5 @@ public class ChartScrollPanel extends JPanel implements MouseWheelListener, KeyL
             rangeAxisMap.get(axisIndex).setRange(rangeMin, rangeMax);
         }
     }
- 
+
 }
