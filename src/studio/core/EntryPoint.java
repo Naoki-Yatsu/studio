@@ -1,22 +1,13 @@
-/* Studio for kdb+ by Charles Skelton
-   is licensed under a Creative Commons Attribution-Noncommercial-Share Alike 3.0 Germany License
-   http://creativecommons.org/licenses/by-nc-sa/3.0
-   except for the netbeans components which retain their original copyright notice
-*/
-
 package studio.core;
 
 import java.awt.Font;
 import java.util.Locale;
 import studio.kdb.Config;
-import studio.kdb.Lm;
 import studio.ui.ExceptionGroup;
 import studio.ui.Studio;
 
 import java.util.TimeZone;
-import javax.swing.JOptionPane;
 import javax.swing.UIManager;
-import studio.ui.LicensePanel;
 
 public class EntryPoint {
     public static void main(final String[] args) {
@@ -45,7 +36,7 @@ public class EntryPoint {
 
      //   studio.ui.I18n.setLocale(new Locale("zh", "cn"));
 
-        if (!Config.getInstance().getAcceptedLicense()) {
+        /*if (!Config.getInstance().getAcceptedLicense()) {
             LicensePanel panel = new LicensePanel();
             Object[] options = new String[]{
                 "Accept","Do Not Accept"
@@ -63,7 +54,7 @@ public class EntryPoint {
 
             Config.getInstance().setAcceptedLicense(Lm.buildDate);
         }
-        
+        */
         UIManager.put("Table.font",new javax.swing.plaf.FontUIResource("Monospaced",Font.PLAIN,UIManager.getFont("Table.font").getSize()));
         System.setProperty("awt.useSystemAAFontSettings","on");
         System.setProperty("swing.aatext", "true");

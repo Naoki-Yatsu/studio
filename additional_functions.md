@@ -4,7 +4,7 @@ Additional Functions
 Original Version
 ----
 
-3.32
+3.33
 
 Java Version
 ----
@@ -47,7 +47,7 @@ This version is able to create multi-axis chart.
 
 * Multi-Axis -  X-axis is only one, Y-axes are 1-5 and left-right axis is enabled.
 * Chart Type - Line, Line-Marker, Bar, Scatter and OHLC.
-* Show corss-hair for first item for each Y-axis.
+* Show corss-hair for first item for each Y-axis or Cursor.
 * Show horizontal and vertical line for X-Y axis.
 * Scroll with zoom-in.
 
