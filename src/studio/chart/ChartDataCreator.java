@@ -166,7 +166,7 @@ public class ChartDataCreator {
         plot.setDomainAxis(domainAxis);
         
         // create chart
-        JFreeChart chart = new JFreeChart(setting.getTitle(), JFreeChart.DEFAULT_TITLE_FONT, plot, true);
+        JFreeChart chart = new JFreeChart(setting.getTitle(), JFreeChart.DEFAULT_TITLE_FONT, plot, setting.showLegend());
         ChartUtilities.applyCurrentTheme(chart);
         
         return chart;
@@ -321,7 +321,7 @@ public class ChartDataCreator {
             // separate legend
             addSepareteLegendTitle(chart);
         } else {
-            chart = new JFreeChart(setting.getTitle(), JFreeChart.DEFAULT_TITLE_FONT, combinedDomainXYPlot, true);
+            chart = new JFreeChart(setting.getTitle(), JFreeChart.DEFAULT_TITLE_FONT, combinedDomainXYPlot, setting.showLegend());
         }
         
         ChartUtilities.applyCurrentTheme(chart);

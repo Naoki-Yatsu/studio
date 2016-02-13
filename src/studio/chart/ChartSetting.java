@@ -22,6 +22,7 @@ public class ChartSetting {
     
     public static final boolean TOP_BUTTON_DEFAULT = true;
     public static final boolean REVERSE_RENDERING_DEFAULT = true;
+    public static final boolean LEGEND_DEFAULT = true;
     public static final boolean CROSS_HAIR_DEFAULT = false;
     public static final boolean SCROLL_BAR_DEFAULT = true;
     public static final boolean SCROLL_ADJUST_DEFAULT = true;
@@ -41,6 +42,7 @@ public class ChartSetting {
     
     private boolean topBUtton = TOP_BUTTON_DEFAULT;
     private boolean reverseRendering = REVERSE_RENDERING_DEFAULT;
+    private boolean showLegend = LEGEND_DEFAULT;
     private boolean crossHair = CROSS_HAIR_DEFAULT;
     private boolean crossHairCursor = CROSS_HAIR_DEFAULT;
     private boolean scrollBar = SCROLL_BAR_DEFAULT;
@@ -78,6 +80,7 @@ public class ChartSetting {
 
         topBUtton = TOP_BUTTON_DEFAULT;
         reverseRendering = REVERSE_RENDERING_DEFAULT;
+        showLegend = LEGEND_DEFAULT;
         crossHair = CROSS_HAIR_DEFAULT;
         scrollBar = SCROLL_BAR_DEFAULT;
         scrollAdjust = SCROLL_ADJUST_DEFAULT;
@@ -222,6 +225,12 @@ public class ChartSetting {
     }
     public void setReverseRendering(boolean reverseRendering) {
         this.reverseRendering = reverseRendering;
+    }
+    public boolean showLegend() {
+        return showLegend;
+    }
+    public void setShowLegend(boolean showLegend) {
+        this.showLegend = showLegend;
     }
     public boolean isCrossHair() {
         return crossHair;

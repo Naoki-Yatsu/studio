@@ -124,6 +124,7 @@ public class SmartChartPanel extends JPanel {
     private JComboBox<ChartTheme> themeCombo = new JComboBox<>(ChartTheme.values());
     private JCheckBox topButtonCheckBox = new JCheckBox("Top Button", ChartSetting.TOP_BUTTON_DEFAULT);
     private JCheckBox reverseRenderingOrderCheckBox = new JCheckBox("Rev-Rendering", ChartSetting.REVERSE_RENDERING_DEFAULT);
+    private JCheckBox legendCheckBox = new JCheckBox("legend", ChartSetting.LEGEND_DEFAULT);
     private JCheckBox crosshairOverlayCheckBox = new JCheckBox("Cross-hair", ChartSetting.CROSS_HAIR_DEFAULT);
     private JCheckBox crosshairCursorCheckBox = new JCheckBox("Cursor", ChartSetting.CROSS_HAIR_DEFAULT);
     private JCheckBox scrollBarCheckBox = new JCheckBox("Scroll", ChartSetting.SCROLL_BAR_DEFAULT);
@@ -213,6 +214,7 @@ public class SmartChartPanel extends JPanel {
 
         setting.setTopButton(topButtonCheckBox.isSelected());
         setting.setReverseRendering(reverseRenderingOrderCheckBox.isSelected());
+        setting.setShowLegend(legendCheckBox.isSelected());
         setting.setCrossHair(crosshairOverlayCheckBox.isSelected());
         setting.setCrossHairCursor(crosshairCursorCheckBox.isSelected());
         setting.setScrollBar(scrollBarCheckBox.isSelected());
@@ -286,6 +288,7 @@ public class SmartChartPanel extends JPanel {
         themeCombo.setSelectedIndex(0);
         topButtonCheckBox.setSelected(ChartSetting.TOP_BUTTON_DEFAULT);
         reverseRenderingOrderCheckBox.setSelected(ChartSetting.REVERSE_RENDERING_DEFAULT);
+        legendCheckBox.setSelected(ChartSetting.LEGEND_DEFAULT);
         crosshairOverlayCheckBox.setSelected(ChartSetting.CROSS_HAIR_DEFAULT);
         crosshairCursorCheckBox.setSelected(ChartSetting.CROSS_HAIR_DEFAULT);
         scrollBarCheckBox.setSelected(ChartSetting.SCROLL_BAR_DEFAULT);
@@ -474,7 +477,6 @@ public class SmartChartPanel extends JPanel {
         if (NumberUtils.isNumber(field.getText())) {
             return Integer.parseInt(field.getText());
         } else {
-            // TODO
             return 0;
         }
     }
@@ -645,6 +647,7 @@ public class SmartChartPanel extends JPanel {
         windowPanelInner1.add(themeCombo);
         windowPanelInner1.add(topButtonCheckBox);
         windowPanelInner1.add(reverseRenderingOrderCheckBox);
+        windowPanelInner1.add(legendCheckBox);
         windowPanelInner1.add(serapator1Label);
         
         // window2
@@ -842,6 +845,8 @@ public class SmartChartPanel extends JPanel {
         layout.setConstraints(serapator1Label, gbc);
         gbc.gridx++;
         layout.setConstraints(reverseRenderingOrderCheckBox, gbc);
+        gbc.gridx++;
+        layout.setConstraints(legendCheckBox, gbc);
         
         // window panel 2
         layout = new GridBagLayout();
