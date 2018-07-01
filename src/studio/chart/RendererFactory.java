@@ -42,6 +42,7 @@ public class RendererFactory {
         switch (chartType) {
             case LINE:
             case LINE_GRAD:
+            case LINE_S4:
                 renderer = createLineChartRenderer(tooltips, urls, false);
                 break;
             case LINE_MARK:
@@ -90,7 +91,13 @@ public class RendererFactory {
             setSeriesColorForLineGradation(renderer, seriesColor, seriesCount);
         } else {
             setSeriesColor(renderer, seriesColor, seriesCount);
-        }   
+        }
+        
+        // Others
+        if (chartType == ChartType.LINE_S4) {
+            renderer.setBaseStroke(new BasicStroke(4f));
+            renderer.setAutoPopulateSeriesStroke(false);
+        }
         
         return renderer;
     }
@@ -231,7 +238,6 @@ public class RendererFactory {
             tmpColor = SeriesColor.rotateColor(tmpColor);
         }
     }
-    
     
     private static void changeShapeArrow(XYLineAndShapeRenderer renderer, int seriesCount) {
         // Shape up = ShapeUtilities.createUpTriangle(4);

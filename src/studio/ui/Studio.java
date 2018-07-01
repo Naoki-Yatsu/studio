@@ -82,8 +82,7 @@ import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
 
-import kx.c;
-
+import org.apache.commons.lang3.StringUtils;
 import org.netbeans.editor.ActionFactory;
 import org.netbeans.editor.BaseDocument;
 import org.netbeans.editor.BaseKit;
@@ -97,6 +96,7 @@ import org.netbeans.editor.ext.ExtKit;
 import org.netbeans.editor.ext.ExtSettingsInitializer;
 import org.netbeans.editor.ext.q.QSettingsInitializer;
 
+import kx.c;
 import studio.chart.SmartChartManager;
 import studio.kdb.Config;
 import studio.kdb.ConnectionPool;
@@ -158,6 +158,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
     private UserAction stopAction;
     private UserAction executeAction;
     private UserAction executeCurrentLineAction;
+    private UserAction executeTopAction;
     private UserAction refreshAction;
     private UserAction aboutAction;
     private UserAction exitAction;
@@ -311,7 +312,10 @@ public class Studio extends JPanel implements Observer,WindowListener {
             doc = textArea.getDocument();
             doc.putProperty("filename",null);
             windowListMonitor.fireMyEvent(new WindowListChangedEvent(this));
-        //  doc.putProperty("created", Boolean.TRUE);
+            //  doc.putProperty("created", Boolean.TRUE);
+            
+            // TODO temporally solution
+            textArea.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_T, java.awt.event.InputEvent.CTRL_DOWN_MASK), executeTopAction);
         }
         else
             doc = textArea.getDocument();
@@ -377,6 +381,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
         stopAction.setEnabled(false);
         executeAction.setEnabled(true);
         executeCurrentLineAction.setEnabled(true);
+        executeTopAction.setEnabled(true);
         refreshAction.setEnabled(false);
 
 //        helpAction.setEnabled(true);
@@ -872,8 +877,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
         StringBuffer contents = new StringBuffer();
 
         try {
-            InputStreamReader isr = new InputStreamReader(new FileInputStream(aFile),
-						          "UTF-8");
+            InputStreamReader isr = new InputStreamReader(new FileInputStream(aFile), "UTF-8");
             BufferedReader input = new BufferedReader(isr);
             try {
 
@@ -1339,9 +1343,9 @@ public class Studio extends JPanel implements Observer,WindowListener {
 
         executeAction = new UserAction(I18n.getString("Execute"),
                                        Util.getImage(Config.imageBase2 + "table_sql_run.png"),
-                                       "Execute the full or highlighted text as a query",
+                                       "Execute highlighted text as a query",
                                        new Integer(KeyEvent.VK_E),
-                                       KeyStroke.getKeyStroke(KeyEvent.VK_E,menuShortcutKeyMask)) {
+                                       KeyStroke.getKeyStroke(KeyEvent.VK_E, menuShortcutKeyMask)) {
             
             public void actionPerformed(ActionEvent e) {
                 executeQuery();
@@ -1359,7 +1363,17 @@ public class Studio extends JPanel implements Observer,WindowListener {
                 executeQueryCurrentLine();
             }
         };
+        
+        executeTopAction = new UserAction(I18n.getString("ExecuteTop"),
+                Util.getImage(Config.imageBase2 + "table_sql_run.png"),
+                "Execute highlighted text as a query (TOP)",
+                new Integer(KeyEvent.VK_T),
+                KeyStroke.getKeyStroke(KeyEvent.VK_T, menuShortcutKeyMask)) {
 
+            public void actionPerformed(ActionEvent e) {
+                executeQueryTop(true);
+            }
+        };
 
         refreshAction = new UserAction(I18n.getString("Refresh"),
                                        getImage(Config.imageBase2 + "refresh.png"),
@@ -1403,7 +1417,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
             
             public void actionPerformed(ActionEvent e) {
                     try {
-                        BrowserLaunch.openURL("http://code.kx.com/trac/wiki/Reference");
+                        BrowserLaunch.openURL("http://code.kx.com/q/ref/card/");
                     } catch (Exception ex) {
                        JOptionPane.showMessageDialog(null, "Error attempting to launch web browser:\n" + ex.getLocalizedMessage());
                     }
@@ -1611,6 +1625,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
         menu.setMnemonic(KeyEvent.VK_Q);
         menu.add(new JMenuItem(executeCurrentLineAction));
         menu.add(new JMenuItem(executeAction));
+        menu.add(new JMenuItem(executeTopAction));
         menu.add(new JMenuItem(stopAction));
         menu.add(new JMenuItem(refreshAction));
         menubar.add(menu);
@@ -1762,11 +1777,13 @@ public class Studio extends JPanel implements Observer,WindowListener {
                 stopAction.setEnabled(false);
                 executeAction.setEnabled(false);
                 executeCurrentLineAction.setEnabled(false);
+                executeTopAction.setEnabled(false);
                 refreshAction.setEnabled(false);
             }
             else {
                 executeAction.setEnabled(true);
                 executeCurrentLineAction.setEnabled(true);
+                executeTopAction.setEnabled(true);
                 editServerAction.setEnabled(true);
                 removeServerAction.setEnabled(true);
             }
@@ -2071,9 +2088,32 @@ public class Studio extends JPanel implements Observer,WindowListener {
     }
 
     public void executeQuery() {
-        executeQuery(getEditorText(textArea));
+        String text = getEditorText(textArea);
+        if (StringUtils.isNotBlank(text)) {
+            executeQuery(text);
+        } else {
+            JOptionPane.showMessageDialog(frame,
+                    "\nNo text available to submit to server.\n\n",
+                    "Studio for kdb+",
+                    JOptionPane.OK_OPTION,
+                    getImage(Config.imageBase + "32x32/information.png"));
+        }
     }
 
+    public void executeQueryTop(boolean isTop) {
+        String text = getEditorText(textArea);
+        if (StringUtils.isNotBlank(text)) {
+            text = "1000#" + text;
+            executeQuery(text);
+        } else {
+            JOptionPane.showMessageDialog(frame,
+                    "\nNo text available to submit to server.\n\n",
+                    "Studio for kdb+",
+                    JOptionPane.OK_OPTION,
+                    getImage(Config.imageBase + "32x32/information.png"));
+        }
+    }
+    
     private void executeQuery(String text) {
         table = null;
 
@@ -2083,7 +2123,6 @@ public class Studio extends JPanel implements Observer,WindowListener {
                                           "Studio for kdb+",
                                           JOptionPane.OK_OPTION,
                                           getImage(Config.imageBase + "32x32/information.png"));
-
             return;
         }
 
@@ -2091,6 +2130,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
         stopAction.setEnabled(true);
         executeAction.setEnabled(false);
         executeCurrentLineAction.setEnabled(false);
+        executeTopAction.setEnabled(false);
         exportAction.setEnabled(false);
         chartAction.setEnabled(false);
         smartChartAction.setEnabled(true);
@@ -2102,22 +2142,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
     }
 
     private String getEditorText(JEditorPane editor) {
-        String text = editor.getSelectedText();
-
-        if (text != null) {
-            if (text.length() > 0)
-                if (text.trim().length() == 0)
-                    return null; // selected text is whitespace
-        }
-        else
-            text = editor.getText(); // get the full text then
-
-        if (text != null)
-            text = text.trim();
-
-        if (text.trim().length() == 0)
-            text = null;
-
+        String text = StringUtils.trimToEmpty(editor.getSelectedText());
         return text;
     }
 
@@ -2346,6 +2371,7 @@ public class Studio extends JPanel implements Observer,WindowListener {
                 stopAction.setEnabled(false);
                 executeAction.setEnabled(true);
                 executeCurrentLineAction.setEnabled(true);
+                executeTopAction.setEnabled(true);
                 refreshAction.setEnabled(true);
 
                 System.gc();

@@ -28,6 +28,7 @@ Username=用户名
 Password=密码
 Query=查询
 Execute=执行
+ExecuteTop=执行
 Refresh=刷新
 Window=窗口
 Help=帮助

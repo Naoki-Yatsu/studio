@@ -6,7 +6,7 @@ public enum ChartType {
     LINE,
     /** line and shape(dot) */ 
     LINE_DT,
-
+    
     /** OHLC */
     OHLC,
     OHLC2,
@@ -26,7 +26,9 @@ public enum ChartType {
 
     /** Line with Mark */
     LINE_MARK,
-    /** Line with gradation color*/
-    LINE_GRAD;
+    /** Line with gradation color */
+    LINE_GRAD,
+    /** Line BaseStroke4 */
+    LINE_S4;
     
 }
