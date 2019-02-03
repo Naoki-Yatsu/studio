@@ -45,6 +45,8 @@ import studio.kdb.TableHeaderRenderer;
 import studio.kdb.TableRowHeader;
 
 public class QGrid extends JPanel {
+    private static final long serialVersionUID = 1L;
+    
     private UserAction copyExcelFormatAction;
     private TableModel model;
     private JTable table;
@@ -262,10 +264,8 @@ public class QGrid extends JPanel {
                 int numrows = table.getSelectedRowCount();
                 int[] rowsselected = table.getSelectedRows();
                 int[] colsselected = table.getSelectedColumns();
-                if (!((numrows - 1 == rowsselected[rowsselected.length - 1] - rowsselected[0] &&
-                    numrows == rowsselected.length) &&
-                    (numcols - 1 == colsselected[colsselected.length - 1] - colsselected[0] &&
-                    numcols == colsselected.length))) {
+                if (!((numrows - 1 == rowsselected[rowsselected.length - 1] - rowsselected[0] && numrows == rowsselected.length) &&
+                    (numcols - 1 == colsselected[colsselected.length - 1] - colsselected[0] && numcols == colsselected.length))) {
                     JOptionPane.showMessageDialog(null,
                                                   "Invalid Copy Selection",
                                                   "Invalid Copy Selection",
@@ -274,33 +274,29 @@ public class QGrid extends JPanel {
                 }
 
                 if (table.getSelectedRowCount() == table.getRowCount()) {
-                    for (int col = 0;col < numcols;col++) {
+                    for (int col = 0; col < numcols; col++) {
                         sb.append(table.getColumnName(colsselected[col]));
-                        if (col < numcols - 1)
+                        if (col < numcols - 1) {
                             sb.append("\t");
+                        }
                     }
                     sb.append(newline);
                 }
 
-                for (int row = 0;row < numrows;row++) {
-                    if (row > 0)
+                for (int row = 0; row < numrows; row++) {
+                    if (row > 0) {
                         sb.append(newline);
-                    for (int col = 0;col < numcols;col++) {
-                        boolean symColumn = table.getColumnClass(col) == K.KSymbolVector.class;
-                        if (symColumn)
-                            sb.append("\"");
-
-                        K.KBase b = (K.KBase) table.getValueAt(rowsselected[row],colsselected[col]);
-                        if (!b.isNull())
-                            sb.append(b.toString(false));
-                        if (symColumn)
-                            sb.append("\"");
-                        if (col < numcols - 1)
+                    }
+                    for (int col = 0; col < numcols; col++) {
+                        K.KBase b = (K.KBase) table.getValueAt(rowsselected[row], colsselected[col]);
+                        sb.append(toExcelFormat(b));
+                        if (col < numcols - 1) {
                             sb.append("\t");
+                        }
                     }
                 }
                 StringSelection ss = new StringSelection(sb.toString());
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss,null);
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ss, null);
             }
         };
 
@@ -346,6 +342,17 @@ public class QGrid extends JPanel {
                                                         100,
                                                         table.getRowHeight()));
 
+        }
+    }
+    
+    private String toExcelFormat(K.KBase base) {
+        if (base == null || base.isNull()) {
+            return "";
+        }
+        if (base instanceof K.KSymbolVector) {
+            return "\"" + base.toExcelString() + "\"";
+        } else {
+            return base.toExcelString();
         }
     }
 }
